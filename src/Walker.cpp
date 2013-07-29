@@ -172,7 +172,6 @@ Walker::~Walker()
 void Walker::commenceWalking(balance_state_t &parent_state, nudge_state_t &state, balance_gains_t &gains)
 {
     int timeIndex=0, nextTimeIndex=0, prevTimeIndex=0;
-    keepWalking = true;
     size_t fs;
  
     zmp_traj_t prevTrajectory, currentTrajectory, nextTrajectory;
@@ -202,12 +201,10 @@ void Walker::commenceWalking(balance_state_t &parent_state, nudge_state_t &state
                     &t, ACH_O_WAIT | ACH_O_LAST );
 
         checkCommands();
-        if( cmd.cmd_request != BAL_ZMP_WALKING )
-            keepWalking = false;
-    } while(!daemon_sig_quit && keepWalking && (r==ACH_TIMEOUT
+    } while(!daemon_sig_quit && (r==ACH_TIMEOUT
                 || !currentTrajectory.reuse) ); // TODO: Replace this with something more intelligent
 
-    if(!keepWalking || !currentTrajectory.reuse) // TODO: Take out the reuse condition here
+    if(!currentTrajectory.reuse) // TODO: Take out the reuse condition here
     {
         bal_state.m_walk_mode = WALK_INACTIVE;
         sendState();
@@ -286,16 +283,12 @@ void Walker::commenceWalking(balance_state_t &parent_state, nudge_state_t &state
                         " -- Biggest error was %f radians in joint %s\n",
                         m_maxInitTime, biggestErr, jointNames[worstJoint] );
 
-        keepWalking = false;
-        
         bal_state.m_walk_error = WALK_INIT_FAILED;
     }
 
     timeIndex = 1;
     bool haveNewTrajectory = false;
-    if( keepWalking )
-        fprintf(stdout, "Beginning main walking loop\n"); fflush(stdout);
-    while(keepWalking && !daemon_sig_quit)
+    while( !daemon_sig_quit)
     {
         haveNewTrajectory = checkForNewTrajectory(nextTrajectory, haveNewTrajectory);
         ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
@@ -376,8 +369,6 @@ void Walker::commenceWalking(balance_state_t &parent_state, nudge_state_t &state
         else if( timeIndex == currentTrajectory.count-1 && haveNewTrajectory )
         {
             checkCommands();
-            if( cmd.cmd_request != BAL_ZMP_WALKING )
-                keepWalking = false;
 
             if( keepWalking )
             {
