@@ -86,6 +86,7 @@ INSTALL(FILES include/Hubo_Control.h
               include/balance-daemon.h
               include/manip.h
               include/hubo-zmp.h
+	      include/Ladder.h
               include/DrcHuboKin.h
         DESTINATION /usr/local/include/)
 
