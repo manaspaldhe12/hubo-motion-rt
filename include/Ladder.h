@@ -38,6 +38,9 @@
 
 #ifndef WALKER_H
 #define WALKER_H
+#define LADDER_PLANNERINITCHAN "ladder_planner"
+
+
 #include "balance-daemon.h"
 #include <hubo-zmp.h>
 typedef struct LadderPlanner{
