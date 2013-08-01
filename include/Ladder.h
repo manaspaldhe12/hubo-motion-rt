@@ -56,6 +56,9 @@ typedef struct LadderPlanner{
 	double inclination;
 	int number_of_stairs;
 
+	double x_position;
+	double y_position;
+	double theta;
 
 } LadderPlanner_t;
 

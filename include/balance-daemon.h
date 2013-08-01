@@ -42,7 +42,7 @@
 #define BALANCE_CMD_CHAN "balance-cmd"
 #define BALANCE_STATE_CHAN "balance-state"
 #define BALANCE_PARAM_CHAN "balance-param"
-
+#define HUBO_CHAN_ZMP_TRAJ_NAME "ladder-cmd"
 typedef enum {
 
     BAL_READY=0,

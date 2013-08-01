@@ -41,6 +41,7 @@
 #include "balance-daemon.h"
 #include "Walker.h"
 
+
 Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelContinuityTolerance) :
         m_maxInitTime(maxInitTime),
         m_jointSpaceTolerance( jointSpaceTolerance ),
@@ -70,7 +71,7 @@ Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelCo
 
     memset( &cmd, 0, sizeof(cmd) );
     memset( &bal_state, 0, sizeof(bal_state) );
-} 
+}
 
 Ladder::~Ladder()
 {
@@ -80,7 +81,7 @@ Ladder::~Ladder()
     ach_close( &bal_state_chan );
 }
 
-void Ladder::commenceClimbing(balance_state_t &parent_state,  balance_gains_t &gains)
+void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &gains)
 {
     int timeIndex=0, nextTimeIndex=0, prevTimeIndex=0;
     size_t fs;
@@ -94,7 +95,7 @@ void Ladder::commenceClimbing(balance_state_t &parent_state,  balance_gains_t &g
 
     memcpy( &bal_state, &parent_state, sizeof(bal_state) );
 
-    bal_state.m_balance_mode = BAL_LADDER_CLIMBING; 
+    bal_state.m_balance_mode = BAL_LADDER_CLIMBING;
     sendState();
 
     fprintf(stdout, "Waiting for first trajectory\n"); fflush(stdout);
