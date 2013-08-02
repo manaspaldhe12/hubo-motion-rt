@@ -118,13 +118,13 @@ int main(int argc, char **argv)
     memset( &ovr, 0, sizeof(ovr) );
     memset( &manip_state, 0, sizeof(manip_state) );
     
-    hubo.update();
+    hubo.update(false);
     double dt, time=hubo.getTime();
 
     size_t fs;
     while( !daemon_sig_quit )
     {
-        hubo.update();
+        hubo.update(false);
         dt = hubo.getTime() - time;
         time = hubo.getTime();
         if( dt <= 0 )
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	    ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
                         &fs, NULL, ACH_O_LAST );
 
-            if( OVR_SOVEREIGN == manip_state.override )
+            /*if( OVR_SOVEREIGN == manip_state.override )
             {
                 ovr.m_override = OVR_ACQUIESCENT;
                 ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
                 staticBalance(hubo, kin, cmd, gains, dt);
             }
             else if( OVR_ACQUIESCENT == manip_state.override )
-            {
+            {*/
 		printf("into the OVR_ACQUIESCENT \n");
                 ladder_climber.commenceClimbing(state, gains);
 		printf("done ladder climbing\n");
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
                 hubo.releaseRightArm();
                 hubo.releaseBody();
                 hubo.releaseNeck();
-            }
+            //}
 
 	}
 	else
