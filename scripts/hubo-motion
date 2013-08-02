@@ -185,7 +185,7 @@ StartMotionDaemons()
 {
 	sudo control-daemon
     sudo manip-daemon
-    sudo balance-daemon
+    #sudo balance-daemon
 }
 
 CtrlHubo()

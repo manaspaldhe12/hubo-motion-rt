@@ -46,12 +46,16 @@ file(GLOB balance_daemon_source "src/balance-daemon.cpp"
                                 "include/balance-daemon.h"
                                 "src/Walker.cpp"
                                 "include/Walker.h"
+                                "src/Ladder.cpp"
+                                "include/Ladder.h"
                                 "include/hubo-zmp.h" )
 
 file(GLOB manip_daemon_source "src/manip-daemon.cpp"
                               "include/manip.h" )
 
 file(GLOB gravityTest_source "src/gravityTest.cpp")
+
+#file(GLOB ladderTest_source "src/Ladder.cpp")
 
 add_library(daemonizer SHARED ${daemonizer_source})
 #link_libraries(daemonizer)
@@ -75,6 +79,9 @@ target_link_libraries(manip-daemon m rt ach huboparams RobotKin daemonizer drchu
 add_executable(gravityTest ${gravityTest_source})
 target_link_libraries(gravityTest drchubokin huboctrl RobotKin m rt ach huboparams daemonizer)
 
+#add_executable(ladderTest ${ladderTest_source})
+#target_link_libraries(ladderTest drchubokin huboctrl RobotKin m rt ach huboparams daemonizer)
+
 # Install Libraries
 INSTALL(TARGETS daemonizer
                 huboctrl
@@ -87,6 +94,8 @@ INSTALL(FILES include/Hubo_Control.h
               include/manip.h
               include/hubo-zmp.h
 	      include/Ladder.h
+              include/DrcHuboKin.h
+	      include/Walker.h
               include/DrcHuboKin.h
         DESTINATION /usr/local/include/)
 

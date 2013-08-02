@@ -35,12 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define LADDER_PLANNERINITCHAN "ladderplanner"
 
-#ifndef WALKER_H
-#define WALKER_H
-#define LADDER_PLANNERINITCHAN "ladder_planner"
-
-
+#include "Walker.h"
 #include "balance-daemon.h"
 #include <hubo-zmp.h>
 typedef struct LadderPlanner{
@@ -96,7 +93,9 @@ protected:
     void sendState();
     void checkCommands();
 
-
+    void executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
+            zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+            balance_gains_t &gains, double dt );
 
 
 
@@ -105,5 +104,4 @@ protected:
 
 
 
-#endif // WALKER_H
 

@@ -40,6 +40,7 @@
 #include "Walker.h"
 #include "Hubo_Control.h"
 #include "manip.h"
+#include "Ladder.h"
 
 ach_channel_t bal_cmd_chan;
 ach_channel_t bal_state_chan;
@@ -78,10 +79,10 @@ void moveHips(Hubo_Control &hubo, DrcHuboKin &kin, std::vector<LegVector, Eigen:
 
 int main(int argc, char **argv)
 {
-    Hubo_Control hubo("balance-daemon", 35);
+    //Hubo_Control hubo("balance-daemon", 35);
+    Hubo_Control hubo(false);
     DrcHuboKin kin;
-
-    //Hubo_Control hubo;
+    std::cout << "In balance daemon\n";
 
     hubo.storeAllDefaults();
 
@@ -101,6 +102,7 @@ int main(int argc, char **argv)
     daemon_assert( r==ACH_OK, __LINE__ );
 
     Walker walk;
+    Ladder ladder_climber;
 
     balance_cmd_t cmd;
     balance_state_t state;
@@ -133,16 +135,18 @@ int main(int argc, char **argv)
 
         ach_get( &bal_cmd_chan, &cmd, sizeof(cmd), &fs, NULL, ACH_O_LAST );
         ach_get( &bal_param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
-
+	std::cout << "Request: " << cmd.cmd_request << std::endl;
         state.m_balance_mode = cmd.cmd_request;
 
         
         if( BAL_LEGS_ONLY == cmd.cmd_request )
         {
+	    printf("balanccING \n");
             staticBalance(hubo, kin, cmd, gains, dt);
         }
         else if( BAL_ZMP_WALKING == cmd.cmd_request )
         {
+	    printf("into walkING \n");
             ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
                         &fs, NULL, ACH_O_LAST );
 
@@ -165,7 +169,35 @@ int main(int argc, char **argv)
                 hubo.releaseNeck();
             }
         }
+	else if (BAL_LADDER_CLIMBING == cmd.cmd_request){
+	    printf("into Bal_LADDER_CLIMBING \n");
+	    ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
+                        &fs, NULL, ACH_O_LAST );
 
+            if( OVR_SOVEREIGN == manip_state.override )
+            {
+                ovr.m_override = OVR_ACQUIESCENT;
+                ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
+
+                staticBalance(hubo, kin, cmd, gains, dt);
+            }
+            else if( OVR_ACQUIESCENT == manip_state.override )
+            {
+		printf("into the OVR_ACQUIESCENT \n");
+                ladder_climber.commenceClimbing(state, gains);
+		printf("done ladder climbing\n");
+                ovr.m_override = OVR_SOVEREIGN;
+                ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
+                // Probably not necessary...
+                hubo.releaseLeftArm();
+                hubo.releaseRightArm();
+                hubo.releaseBody();
+                hubo.releaseNeck();
+            }
+
+	}
+	else
+	    std::cout << "uh oh!\n";
         ach_put( &bal_state_chan, &state, sizeof(state) );
 
     }
