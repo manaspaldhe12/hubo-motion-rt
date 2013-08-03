@@ -135,7 +135,7 @@ Walker::Walker(double maxInitTime, double jointSpaceTolerance, double jointVelCo
         m_jointSpaceTolerance( jointSpaceTolerance ),
         m_jointVelContTol( jointVelContinuityTolerance ),
         keepWalking(true),
-        hubo()
+        hubo(false)
 {
     ach_status_t r = ach_open( &zmp_chan, HUBO_CHAN_ZMP_TRAJ_NAME, NULL );
     if( r != ACH_OK )

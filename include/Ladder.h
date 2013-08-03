@@ -35,35 +35,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define LADDER_PLANNERINITCHAN "ladderplanner"
 
 #include "Walker.h"
 #include "balance-daemon.h"
 #include <hubo-zmp.h>
-typedef struct LadderPlanner{
-	double rung_width;
-	double rung_length;
-
-	double rung_spacing;
-	double first_rung_spacing;
-
-	double rail_height;
-	double rail_radius;
-
-	double inclination;
-	int number_of_stairs;
-
-	double x_position;
-	double y_position;
-	double theta;
-
-} LadderPlanner_t;
+#include "Ladderach.h"
 
 class Ladder
 {
 
 public:
-
+    Hubo_Control hubo;
     Ladder(double maxInitTime=15, double jointSpaceTolerance=0.02, double jointVelContTol=6.0);
     ~Ladder();
 
@@ -93,7 +75,11 @@ protected:
     void sendState();
     void checkCommands();
 
-    void executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
+    //void executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
+    //        zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+    //        balance_gains_t &gains, double dt );
+
+     void executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt );
 

@@ -101,9 +101,11 @@ int main(int argc, char **argv)
     r= ach_open( &manip_state_chan, CHAN_HUBO_MANIP_STATE, NULL );
     daemon_assert( r==ACH_OK, __LINE__ );
 
+    printf("before the const \n");
     Walker walk;
     Ladder ladder_climber;
-
+    printf("after the const \n");
+   
     balance_cmd_t cmd;
     balance_state_t state;
     balance_gains_t gains;
@@ -120,21 +122,24 @@ int main(int argc, char **argv)
     
     hubo.update(false);
     double dt, time=hubo.getTime();
-
+    printf("entering the loop \n");
     size_t fs;
     while( !daemon_sig_quit )
     {
+	printf("in the loop \n");
         hubo.update(false);
         dt = hubo.getTime() - time;
         time = hubo.getTime();
-        if( dt <= 0 )
+        /* if( dt <= 0 )
         {
             fprintf(stderr, "Something unnatural has happened... %f\n", dt);
             continue;
-        }
+        }*/
 
-        ach_get( &bal_cmd_chan, &cmd, sizeof(cmd), &fs, NULL, ACH_O_LAST );
-        ach_get( &bal_param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
+        ach_status_t r=ach_get( &bal_cmd_chan, &cmd, sizeof(cmd), &fs, NULL, ACH_O_LAST );
+	std::cout<<"ach result " << ach_result_to_string(r)<<"\t"<< cmd.cmd_request<<std::endl;
+
+	ach_get( &bal_param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
 	std::cout << "Request: " << cmd.cmd_request << std::endl;
         state.m_balance_mode = cmd.cmd_request;
 

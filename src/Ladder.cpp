@@ -41,13 +41,13 @@
 #include "balance-daemon.h"
 #include "Walker.h"
 
-Hubo_Control hubo(false);
 
 Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelContinuityTolerance) :
         m_maxInitTime(maxInitTime),
         m_jointSpaceTolerance( jointSpaceTolerance ),
         m_jointVelContTol( jointVelContinuityTolerance ),
-        keepWalking(true)
+        keepWalking(true),
+	hubo(false)
 {
     ach_status_t r = ach_open( &ladder_chan, HUBO_CHAN_LADDER_TRAJ_NAME, NULL );
     if( r != ACH_OK )
@@ -190,19 +190,19 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 
         dt = hubo.getTime() - time;
         time = hubo.getTime();
-        if( dt <= 0 )
+        /*if( dt <= 0 )
         {
             fprintf(stderr, "Something unnatural has happened... %f\n", dt);
             continue;
-        }
+        }*/
 
         if( timeIndex==0 )
         {
             nextTimeIndex = timeIndex+1;
-            executeTimeStep( hubo, prevTrajectory->traj[prevTimeIndex],
-                                   currentTrajectory->traj[timeIndex],
-                                   currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt );
+            //executeTimeStep( hubo, prevTrajectory->traj[prevTimeIndex],
+            //                       currentTrajectory->traj[timeIndex],
+            //                       currentTrajectory->traj[nextTimeIndex],
+            //                       gains, dt );
             
         }
         else if( timeIndex == currentTrajectory->periodEndTick && haveNewTrajectory )
@@ -211,10 +211,10 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
                                         nextTrajectory->traj[0], dt ) )
             {
                 nextTimeIndex = 0;
-                executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
-                                       currentTrajectory->traj[timeIndex],
-                                       nextTrajectory->traj[nextTimeIndex],
-                                       gains, dt );
+              //  executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+              //                         currentTrajectory->traj[timeIndex],
+              //                         nextTrajectory->traj[nextTimeIndex],
+              //                         gains, dt );
                 
                 memcpy( prevTrajectory, currentTrajectory, sizeof(*prevTrajectory) );
                 memcpy( currentTrajectory, nextTrajectory, sizeof(*nextTrajectory) );
@@ -226,10 +226,10 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
                 bal_state.m_walk_error = WALK_FAILED_SWAP;
 
                 nextTimeIndex = timeIndex+1;
-                executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
-                                       currentTrajectory->traj[timeIndex],
-                                       currentTrajectory->traj[nextTimeIndex],
-                                       gains, dt );
+            //    executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+            //                           currentTrajectory->traj[timeIndex],
+            //                           currentTrajectory->traj[nextTimeIndex],
+            //                           gains, dt );
             }
             haveNewTrajectory = false;
         }
@@ -245,20 +245,21 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
             else
                 nextTimeIndex = timeIndex+1;
 
-            executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
-                                   currentTrajectory->traj[timeIndex],
-                                   currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt );
+         //   executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+         //                          currentTrajectory->traj[timeIndex],
+         //                          currentTrajectory->traj[nextTimeIndex],
+         //                          gains, dt );
         }
         else if( timeIndex < currentTrajectory->count-1 )
         {
             nextTimeIndex = timeIndex+1;
 	    printf(" in this step \n");
-            executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+            executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
                                    currentTrajectory->traj[timeIndex],
                                    currentTrajectory->traj[nextTimeIndex],
                                    gains, dt );
             printf("executed a step \n");
+	    fflush(stdout);
         }
         else
         {
@@ -303,7 +304,7 @@ bool Ladder::validateNextTrajectory( zmp_traj_element_t &current, zmp_traj_eleme
 }
 
 
-void Ladder::executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
+void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt )
 {
@@ -312,16 +313,11 @@ void Ladder::executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
 	  printf ("joint is  %d \n", i);
-       // hubo.setJointTraj( i, currentElem.angles[i] );
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
 	  }
-       // vel = (nextElem.angles[i]-currentElem.angles[i])*ZMP_TRAJ_FREQ_HZ;
-       // hubo.setJointVelocity( i, vel );
     }
     printf("out of the loop \n");
-    //std::cout << std::endl;
-    //hubo.sendControls();
 }
 
 

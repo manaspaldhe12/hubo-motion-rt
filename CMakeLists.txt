@@ -93,7 +93,7 @@ INSTALL(FILES include/Hubo_Control.h
               include/balance-daemon.h
               include/manip.h
               include/hubo-zmp.h
-	      include/Ladder.h
+	      include/Ladderach.h
               include/DrcHuboKin.h
 	      include/Walker.h
               include/DrcHuboKin.h
