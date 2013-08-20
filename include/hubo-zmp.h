@@ -19,6 +19,7 @@
 
 /// Ach channel name for zmp trajectory
 #define HUBO_CHAN_ZMP_TRAJ_NAME "hubo-zmp-traj"
+#define HUBO_CHAN_ZMP_TRAJ_NAME "hubo-ladder-traj"
 
 /// Ach channel name for walker state
 #define HUBO_CHAN_WALKER_STATE_NAME "walker-state"
