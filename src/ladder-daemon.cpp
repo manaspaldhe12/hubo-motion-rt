@@ -35,101 +35,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#ifndef BALANCE_DAEMON_H
-#define BALANCE_DAEMON_H
-
-#define BALANCE_CMD_CHAN "balance-cmd"
-#define BALANCE_STATE_CHAN "balance-state"
-#define BALANCE_PARAM_CHAN "balance-param"
-#define HUBO_CHAN_LADDER_TRAJ_NAME "ladder-cmd"
-typedef enum {
-
-    BAL_READY=0,
-    BAL_LEGS_ONLY,
-    BAL_ZMP_WALKING,
-    BAL_LADDER_CLIMBING
-      
-/*
-    STATE_INVALID,
-    S_HORSE,
-    S_CRANE,
-    Q_SHIFTDIST,
-    Q_LIFTLEG,
-    Q_CROUCH
-*/
-
-} balance_mode_t;
-
-typedef enum {
-
-    WALK_INACTIVE=0,
-    WALK_WAITING,
-    WALK_INITIALIZING,
-    WALK_IN_PROGRESS
-
-} walk_mode_t;
-
-typedef enum {
-
-    NO_WALK_ERROR=0,
-    WALK_INIT_FAILED,
-    WALK_FAILED_SWAP
-
-} walk_error_t;
+#include "balance-daemon.h"
+#include "DrcHuboKin.h"
+#include "Walker.h"
+#include "Hubo_Control.h"
+#include "manip.h"
 
 
-typedef struct balance_gains {
+ach_channel_t manip_override_chan;
+ach_channel_t manip_state_chan;
 
-    double flattening_gain[2];
-    double decay_gain[2];
-    double force_min_threshold[2];
-    double force_max_threshold[2];
+void staticBalance(Hubo_Control &hubo, balance_cmd_t &cmd, balance_gains_t &gains, double dt);
 
-    double straightening_pitch_gain[2];
-    double straightening_roll_gain[2];
+
+int main(int argc, char **argv)
+{
+    Hubo_Control hubo("ladder-daemon", 35);
+    hubo.storeAllDefaults();
+
+    r = ach_open( &manip_override_chan, CHAN_HUBO_MANIP_OVERRIDE, NULL );
+    daemon_assert( r==ACH_OK, __LINE__ );
+
+    r= ach_open( &manip_state_chan, CHAN_HUBO_MANIP_STATE, NULL );
+    daemon_assert( r==ACH_OK, __LINE__ );
+   
+    manip_override_t ovr;
+    hubo_manip_state_t manip_state;
+
+    memset( &state, 0, sizeof(state) );
+    memset( &manip_state, 0, sizeof(manip_state) );
     
-    double spring_gain[2];
-    double damping_gain[2];
-    double fz_response[2];
+    hubo.update();
+    double dt, time=hubo.getTime();
 
-    double single_support_hip_nudge_kp;
-    double single_support_hip_nudge_kd;
-    double double_support_hip_nudge_kp;
-    double double_support_hip_nudge_kd;
+    size_t fs;
+    while( !daemon_sig_quit )
+    {
+        hubo.update();
+        dt = hubo.getTime() - time;
+        time = hubo.getTime();
 
-} balance_gains_t;
-
-
-
-
-typedef struct balance_cmd {
-
-    balance_mode_t cmd_request;
-    
-    double height;
-    double com_x_offset;
-
-} balance_cmd_t;
-
-typedef struct balance_state {
-
-    balance_mode_t m_balance_mode;
-
-    walk_mode_t m_walk_mode;
-    walk_error_t m_walk_error;
-
-} balance_state_t;
+        if( dt <= 0 )
+        {
+            fprintf(stderr, "Something unnatural has happened... %f\n", dt);
+            continue;
+        }
 
 
-typedef enum {
-    
-    T_INVALID,
-    T_INCOMPLETE,
-    T_COMPLETE
 
-} transition_result_t;
+    }
 
-
-#endif // BALANCE_DAEMON_H
-
+    return 0;
+}

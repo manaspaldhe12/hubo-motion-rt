@@ -111,9 +111,14 @@ typedef enum {
 } ctrl_flag_t;
 
 
+class DrcHuboKin;
+
+
 class Hubo_Control
 {
 public:
+
+    friend class DrcHuboKin;
     /**
      * Constructor for the Hubo_Control class.
     */
@@ -162,44 +167,124 @@ public:
     */
     ctrl_flag_t setPositionControl( int joint );
     /**
-     * Sets joint-space trajectory values for a joint (position, velocity, and acceleration)
+     * Sets the desired correctness metric for a trajectory. The 'correctness' refers
+     * to how far the trajectory will deviate from the velocity profile in order to
+     * get to the position profile.
     */
-    ctrl_flag_t setJointTraj( int joint, double radians, double vel, double acc, bool send=false );
+    ctrl_flag_t setJointTrajCorrectness( int joint, double correctness );
     /**
-     * Sets a joint-space trajectory position value for a joint, using the current velocity
-     * and acceleration settings.
+     * Sets the desired correctness metric for a trajectory. The 'correctness' refers
+     * to how far the trajectory will deviate from the velocity profile in order to
+     * get to the position profile.
     */
-    ctrl_flag_t setJointTraj( int joint, double radians, bool send=false );
+    void setAllTrajCorrectness(double correctness );
+    /**
+     * Sets joint-space trajectory values for a joint (position, velocity)
+    */
+    ctrl_flag_t setJointTraj(int joint, double radians, double vel, bool send=false );
+    /**
+     * Sets a joint-space trajectory waypoint for all the arms angles on the specified
+     * side.
+     */
+    ctrl_flag_t setArmTraj(int side, ArmVector angles, ArmVector vels, bool send);
+    /**
+     * Sets a joint-space trajectory waypoint for all angles on the Left Arm.
+     */
+    ctrl_flag_t setLeftArmTraj(ArmVector angles, ArmVector vels, bool send);
+    /**
+     * Sets a joint-space trajectory waypoint for all angles on the Right Arm.
+     */
+    ctrl_flag_t setRightArmTraj(ArmVector angles, ArmVector vels, bool send);
+    /**
+     * Sets a joint-space trajectory waypoint for all the leg angles on the specified
+     * side.
+     */
+    ctrl_flag_t setLegTraj(int side, ArmVector angles, ArmVector vels, bool send);
+    /**
+     * Sets a joint-space trajectory waypoint for all angles on the Left Leg.
+     */
+    ctrl_flag_t setLeftLegTraj(LegVector angles, LegVector vels, bool send);
+    /**
+     * Sets a joint-space trajectory waypoint for all angles on the Left Leg.
+     */
+    ctrl_flag_t setRightLegTraj(LegVector angles, LegVector vels, bool send);
+    /**
+     * Toggles joint-level friction (back-EMF) compensation in the specified
+     * joint.
+     */
+    ctrl_flag_t setJointAntiFriction(int joint, bool on);
+    /**
+     * Toggles joint-level friction (back-EMF) compensation in the specified
+     * arm.
+     */
+    ctrl_flag_t setArmAntiFriction(int side, bool on);
+    /**
+     * Toggles joint-space compliance in the specified joint, using the default
+     * gains.
+     */
+    ctrl_flag_t setJointCompliance(int joint, bool on);
+    /**
+     * Toggles joint-space compliance in the specified joint, and sets the default
+     * gains.
+     */
+    ctrl_flag_t setJointCompliance(int joint, bool on, double Kp, double Kd=0);
+    /**
+     * Toggles joint-space compliance in the specified arm.
+     */
+    ctrl_flag_t setArmCompliance(int side, bool on);
+    /**
+     * Toggles joint-space compliance in the specified arm and sets the default
+     * gains.
+     */
+    ctrl_flag_t setArmCompliance(int side, bool on, ArmVector Kp, ArmVector Kd=ArmVector::Zero());
+    /**
+     * Sets the feedforward torque command for the specified joint.
+     */
+    ctrl_flag_t setJointTorque( int joint, double torque );
+    /**
+     * Sets the feedforward torque commands for the specified arm.
+     */
+    ctrl_flag_t setArmTorques( int side, ArmVector torques );
+    /**
+     * Sets the feedforward torque commands for the left arm.
+     *
+     * NOTE: Torque control in the legs is not currently supported.
+     */
+    ctrl_flag_t setLeftArmTorques(ArmVector torques);
+    /**
+     * Sets the feedforward torque commands for the right arm.
+     */
+    ctrl_flag_t setRightArmTorques(ArmVector torques);
     /**
      * Sets joint angle for the joint to specified radian value. If send is true then 
      * the command will be sent to the motor board immediately, otherwise it won't.
-    */
+     */
     ctrl_flag_t setJointAngle( int joint, double radians, bool send=false );
     /**
      * Sets the nominal speed for the joint to speed in radians/sec.
-    */
+     */
     ctrl_flag_t setJointNominalSpeed( int joint, double speed );
     // Velocity control
     /**
      * Safely switches the joint to velocity control. Using this is encouraged if you
      * want to switch between control modes during runtime. Otherwise it is not necessary.
-    */
+     */
     ctrl_flag_t setVelocityControl( int joint );
     /**
      * Sets the joint velocity in rad/s.
-    */
+     */
     ctrl_flag_t setJointVelocity( int joint, double vel, bool send=false );
     // Acceleration setting
     /**
      * Sets the nomical acceleration for the joint in rad/s^2.
-    */
+     */
     ctrl_flag_t setJointNominalAcceleration( int joint, double acc );
 
     // ~* Arm control sets
     // Position control
     /**
      * Extension of setPositionControl() which acts on all joints in an arm.
-    */
+     */
     ctrl_flag_t setArmPosCtrl( int side );
     /**
      * Moves the joint angles for all the arm angles of the arm specified by the "side" argument
@@ -217,40 +302,40 @@ public:
      * right arm joint configuration from its current values to the values specified in rightAngles.
      * HOWEVER, that request will not be sent until you run the command sendControls(). This is
      * because "send" defaults to false if it is not specified.
-    */
+     */
     ctrl_flag_t setArmAngles( int side, ArmVector angles, bool send=false );
     /**
      * Extension of setArmPosCtrl(int side) where side = LEFT
-    */
+     */
     void setLeftArmPosCtrl();
     /**
      * Extension of setArmAngles() where side = LEFT
-    */
+     */
     ctrl_flag_t setLeftArmAngles( ArmVector angles, bool send=false );
     /**
      * Extension of setArmPosCtrl(int side) where side = RIGHT
-    */
+     */
     void setRightArmPosCtrl();
     /**
      * Extension of setArmAngles() where side = RIGHT
-    */
+     */
     ctrl_flag_t setRightArmAngles( ArmVector angles, bool send=false );
     /**
      * Extension of setJointNominalSpeed() which sets all joints in an arm according to the values
      * in "speeds".
-    */
+     */
     ctrl_flag_t setArmNomSpeeds( int side, ArmVector speeds );
     /**
      * Extension of setArmNomSpeeds() where side = LEFT
-    */
+     */
     ctrl_flag_t setLeftArmNomSpeeds( ArmVector speeds );
     /**
      * Extension of setArmNomSpeeds() where side = RIGHT
-    */
+     */
     ctrl_flag_t setRightArmNomSpeeds( ArmVector speeds );
     /**
      * Extension of setVelocityControl() which acts on all joint in an arm designated by "side" (LEFT or RIGHT)
-    */
+     */
     ctrl_flag_t setArmVelCtrl( int side );
     /**
      * Moves the joint angles for all the arm angles of the arm specified by the "side" argument
@@ -272,36 +357,36 @@ public:
      * right arm joints at the velocities specified in "rightVels".
      * HOWEVER, that request will not be sent until you run the command sendControls(). This is
      * because "send" defaults to false if it is not specified.
-    */
+     */
     ctrl_flag_t setArmVels( int side, ArmVector vels, bool send=false );
     /**
      * Extension of setArmVelCtrl() where side = LEFT
-    */
+     */
     void setLeftArmVelCtrl();
     /**
      * Extension of setArmVelCtrl() where side = LEFT
-    */
+     */
     ctrl_flag_t setLeftArmVels( ArmVector vels, bool send=false );
     /**
      * Extension of setArmVelCtrl() where side = RIGHT
-    */
+     */
     void setRightArmVelCtrl();
     /**
      * Extension of setArmVelCtrl() where side = RIGHT
-    */
+     */
     ctrl_flag_t setRightArmVels( ArmVector vels, bool send=false );
     /**
      * Extension of setJointNominalAcceleration() which applies the six values in "acc" to the six
      * joints in the arm corresponding to "side" (LEFT or RIGHT)
-    */
+     */
     ctrl_flag_t setArmNomAcc(int side, ArmVector acc );
     /**
      * Extension of setArmNomAcc() where side = LEFT
-    */
+     */
     ctrl_flag_t setLeftArmNomAcc( ArmVector acc );
     /**
      * Extension of setArmNomAcc() where side = RIGHT
-    */
+     */
     ctrl_flag_t setRightArmNomAcc( ArmVector acc );
 
     // ~* Leg control sets

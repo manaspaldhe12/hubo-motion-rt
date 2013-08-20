@@ -29,7 +29,11 @@ find_package( urdfdom REQUIRED )
 
 file(GLOB daemonizer_source "src/daemonizer.c" "include/daemonizer.h")
 
-file(GLOB control_daemon_source "src/control-daemon.c" "include/control-daemon.h" "tables/control.table")
+file(GLOB control_daemon_source "src/control-daemon.c"
+                                "include/control-daemon.h"
+                                "tables/control.table"
+                                "tables/duty.table"
+                                "tables/torque.table")
 
 #link_libraries(RobotKin)
 
@@ -42,10 +46,16 @@ file(GLOB balance_daemon_source "src/balance-daemon.cpp"
                                 "include/balance-daemon.h"
                                 "src/Walker.cpp"
                                 "include/Walker.h"
+                                "src/Ladder.cpp"
+                                "include/Ladder.h"
                                 "include/hubo-zmp.h" )
 
 file(GLOB manip_daemon_source "src/manip-daemon.cpp"
                               "include/manip.h" )
+
+file(GLOB gravityTest_source "src/gravityTest.cpp")
+
+#file(GLOB ladderTest_source "src/Ladder.cpp")
 
 add_library(daemonizer SHARED ${daemonizer_source})
 #link_libraries(daemonizer)
@@ -66,6 +76,12 @@ target_link_libraries(balance-daemon m rt ach huboparams RobotKin ${urdfdom_LIBR
 add_executable(manip-daemon ${manip_daemon_source})
 target_link_libraries(manip-daemon m rt ach huboparams RobotKin daemonizer drchubokin huboctrl)
 
+add_executable(gravityTest ${gravityTest_source})
+target_link_libraries(gravityTest drchubokin huboctrl RobotKin m rt ach huboparams daemonizer)
+
+#add_executable(ladderTest ${ladderTest_source})
+#target_link_libraries(ladderTest drchubokin huboctrl RobotKin m rt ach huboparams daemonizer)
+
 # Install Libraries
 INSTALL(TARGETS daemonizer
                 huboctrl
@@ -78,12 +94,17 @@ INSTALL(FILES include/Hubo_Control.h
               include/balance-daemon.h
               include/manip.h
               include/hubo-zmp.h
+	      include/Ladderach.h
+              include/DrcHuboKin.h
+	      include/Walker.h
               include/DrcHuboKin.h
               include/motion-trajectory.h
         DESTINATION /usr/local/include/)
 
 # Install Tables
-INSTALL(FILES tables/control.table DESTINATION /etc/hubo-ach/)
+INSTALL(FILES tables/control.table  DESTINATION /etc/hubo-ach/)
+INSTALL(FILES tables/duty.table DESTINATION /etc/hubo-ach/)
+INSTALL(FILES tables/torque.table   DESTINATION /etc/hubo-ach/)
 
 # Install Service
 INSTALL(PROGRAMS scripts/hubo-motion DESTINATION /etc/init.d/)

@@ -1,0 +1,28 @@
+# File: torque.table
+# This file contains default joint factors for converting desired torques
+# to PWM commands for the DRC-Hubo. The values in this table are based
+# off of work by RAINBOW lab and the code written by Dr. Inhyeok Kim.
+
+
+#JointName  DutyTable   Kf      MaxFriction     DeadbandScale
+
+LSP         1           10      4.0             0.65
+LSR         2           5       2.0             1.0
+
+LSY         3           1.0     1.5             0.91
+LEB         4           10      2.3             0.47
+LWY         5           5       6.0             0.1
+LWP         6           20      11.0            0.0
+
+LWR         0           50      0               0.5
+
+
+RSP         1           10      4.0             0.65
+RSR         2           5       2.0             1.0
+
+RSY         3           1.0     1.5             0.91
+REB         4           10      2.3             0.47
+RWY         5           5       6.0             0.5
+RWP         6           30      11.0            0.5
+
+RWR         0           50      0               0.5

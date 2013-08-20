@@ -3,7 +3,7 @@
  * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author: Michael X. Grey <mxgrey@gatech.edu>
+ * Author: Michael X. Grey <mxgrey@gatech.edu> Manas Paldhe <mpaldhe@purdue.edu>
  * Date: May 30, 2013
  *
  * Humanoid Robotics Lab      Georgia Institute of Technology
@@ -36,100 +36,58 @@
  */
 
 
-#ifndef BALANCE_DAEMON_H
-#define BALANCE_DAEMON_H
+#include "Walker.h"
+#include "balance-daemon.h"
+#include <hubo-zmp.h>
+#include "Ladderach.h"
 
-#define BALANCE_CMD_CHAN "balance-cmd"
-#define BALANCE_STATE_CHAN "balance-state"
-#define BALANCE_PARAM_CHAN "balance-param"
-#define HUBO_CHAN_LADDER_TRAJ_NAME "ladder-cmd"
-typedef enum {
+class Ladder
+{
 
-    BAL_READY=0,
-    BAL_LEGS_ONLY,
-    BAL_ZMP_WALKING,
-    BAL_LADDER_CLIMBING
-      
-/*
-    STATE_INVALID,
-    S_HORSE,
-    S_CRANE,
-    Q_SHIFTDIST,
-    Q_LIFTLEG,
-    Q_CROUCH
-*/
+public:
+    Hubo_Control hubo;
+    Ladder(double maxInitTime=15, double jointSpaceTolerance=0.02, double jointVelContTol=6.0);
+    ~Ladder();
 
-} balance_mode_t;
+    ach_channel_t ladder_chan;
+    ach_channel_t param_chan;
+    ach_channel_t bal_cmd_chan;
+    ach_channel_t bal_state_chan;
 
-typedef enum {
+    void commenceClimbing(balance_state_t &parent_state,  balance_gains_t &gains);
 
-    WALK_INACTIVE=0,
-    WALK_WAITING,
-    WALK_INITIALIZING,
-    WALK_IN_PROGRESS
+    double m_jointSpaceTolerance;
+    double m_jointVelContTol;
+    double m_maxInitTime;
 
-} walk_mode_t;
+    balance_cmd_t cmd;
+    balance_state_t bal_state;
 
-typedef enum {
-
-    NO_WALK_ERROR=0,
-    WALK_INIT_FAILED,
-    WALK_FAILED_SWAP
-
-} walk_error_t;
+    bool keepWalking;
 
 
-typedef struct balance_gains {
-
-    double flattening_gain[2];
-    double decay_gain[2];
-    double force_min_threshold[2];
-    double force_max_threshold[2];
-
-    double straightening_pitch_gain[2];
-    double straightening_roll_gain[2];
+protected:
     
-    double spring_gain[2];
-    double damping_gain[2];
-    double fz_response[2];
 
-    double single_support_hip_nudge_kp;
-    double single_support_hip_nudge_kd;
-    double double_support_hip_nudge_kp;
-    double double_support_hip_nudge_kd;
+    bool checkForNewTrajectory(zmp_traj_t &newTrajectory, bool haveNewTrajAlready);
 
-} balance_gains_t;
+    bool validateNextTrajectory( zmp_traj_element_t &current, zmp_traj_element_t &next, double dt );
+    void sendState();
+    void checkCommands();
 
+    //void executeTimeStep(Hubo_Control hubo, zmp_traj_element_t &prevElem,
+    //        zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+    //        balance_gains_t &gains, double dt );
 
-
-
-typedef struct balance_cmd {
-
-    balance_mode_t cmd_request;
-    
-    double height;
-    double com_x_offset;
-
-} balance_cmd_t;
-
-typedef struct balance_state {
-
-    balance_mode_t m_balance_mode;
-
-    walk_mode_t m_walk_mode;
-    walk_error_t m_walk_error;
-
-} balance_state_t;
+     void executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
+            zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+            balance_gains_t &gains, double dt );
 
 
-typedef enum {
-    
-    T_INVALID,
-    T_INCOMPLETE,
-    T_COMPLETE
-
-} transition_result_t;
 
 
-#endif // BALANCE_DAEMON_H
+};
+
+
+
 
