@@ -312,13 +312,13 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
-	  //printf ("joint is  %d \n", i);
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
 		hubo.passJointAngle( i, currentElem.angles[i] );
 	  }
 	  else{
  		hubo.passJointAngle( i, 0);
+		//send 0
 	  }
     }
     hubo.sendControls();
