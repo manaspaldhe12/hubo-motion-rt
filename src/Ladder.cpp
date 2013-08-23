@@ -185,7 +185,7 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
     {
         haveNewTrajectory = checkForNewTrajectory(*nextTrajectory, haveNewTrajectory);
         ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
-        hubo.update(false);
+        hubo.update(true);
 	printf("timeindex is %d \n", timeIndex);
 
         dt = hubo.getTime() - time;
@@ -312,11 +312,16 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
-	  printf ("joint is  %d \n", i);
+	  //printf ("joint is  %d \n", i);
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
+		hubo.passJointAngle( i, currentElem.angles[i] );
+	  }
+	  else{
+ 		hubo.passJointAngle( i, 0);
 	  }
     }
+    hubo.sendControls();
     printf("out of the loop \n");
 }
 

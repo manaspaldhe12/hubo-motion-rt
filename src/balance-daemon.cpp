@@ -154,12 +154,12 @@ int main(int argc, char **argv)
 	    printf("into walkING \n");
             ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
                         &fs, NULL, ACH_O_LAST );
-
+ 	 
             if( OVR_SOVEREIGN == manip_state.override )
             {
                 ovr.m_override = OVR_ACQUIESCENT;
                 ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
-
+	 
                 staticBalance(hubo, kin, cmd, gains, dt);
             }
             else if( OVR_ACQUIESCENT == manip_state.override )

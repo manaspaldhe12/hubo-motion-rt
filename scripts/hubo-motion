@@ -228,7 +228,7 @@ StartHubo()
 	
 		Ach
 
-        sudo hubo-ach daemon drc
+        sudo hubo-ach daemon
 
         StartMotionDaemons
 
