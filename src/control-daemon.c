@@ -371,7 +371,7 @@ void controlLoop()
         {
             iter++; if(iter>maxi) iter=0;
 
-            if(iter==maxi) fprintf(stdout, "\nPWM: ");
+            //if(iter==maxi) fprintf(stdout, "\nPWM: ");
 
             for(int jnt=0; jnt<HUBO_JOINT_COUNT; jnt++)
             {
@@ -499,7 +499,8 @@ void controlLoop()
                 {
                     V[jnt] = (ctrl.joint[jnt].position-H_ref.ref[jnt])/dt;
                     H_ref.ref[jnt] = ctrl.joint[jnt].position;
-                }
+                    if(jnt=LEB) fprintf(stdout, "test %f\t%f\n", ctrl.joint[jnt].position, H_ref.ref[jnt]);
+		}
                 else if( fabs(err) <=  fabs(errorFactor*ctrl.joint[jnt].error_limit*dtMax)  // TODO: Validate this condition
                     && fail[jnt]==0  )
                 {

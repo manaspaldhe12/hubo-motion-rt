@@ -47,7 +47,7 @@ Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelCo
         m_jointSpaceTolerance( jointSpaceTolerance ),
         m_jointVelContTol( jointVelContinuityTolerance ),
         keepWalking(true),
-	hubo(false)
+	hubo()
 {
     ach_status_t r = ach_open( &ladder_chan, HUBO_CHAN_LADDER_TRAJ_NAME, NULL );
     if( r != ACH_OK )
