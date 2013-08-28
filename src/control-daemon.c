@@ -499,7 +499,7 @@ void controlLoop()
                 {
                     V[jnt] = (ctrl.joint[jnt].position-H_ref.ref[jnt])/dt;
                     H_ref.ref[jnt] = ctrl.joint[jnt].position;
-                    if(jnt=LEB) fprintf(stdout, "test %f\t%f\n", ctrl.joint[jnt].position, H_ref.ref[jnt]);
+                    if(jnt==LEB) fprintf(stdout, "test %f\t%f\n", ctrl.joint[jnt].position, H_ref.ref[jnt]);
 		}
                 else if( fabs(err) <=  fabs(errorFactor*ctrl.joint[jnt].error_limit*dtMax)  // TODO: Validate this condition
                     && fail[jnt]==0  )
