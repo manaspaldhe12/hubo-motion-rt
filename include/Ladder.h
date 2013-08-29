@@ -79,12 +79,11 @@ protected:
     //        zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
     //        balance_gains_t &gains, double dt );
 
-     void executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
+    void executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt );
 
-
-
+    void executeTestStep(Hubo_Control &hubo, int counter);
 
 };
 

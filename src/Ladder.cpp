@@ -181,6 +181,10 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 
     timeIndex = 1;
     bool haveNewTrajectory = false;
+
+    int test_counter=0;
+    bool increasing=true;
+
     while(!daemon_sig_quit)
     {
         haveNewTrajectory = checkForNewTrajectory(*nextTrajectory, haveNewTrajectory);
@@ -253,11 +257,24 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         else if( timeIndex < currentTrajectory->count-1 )
         {
             nextTimeIndex = timeIndex+1;
-	    printf(" in this step \n");
-            executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
-                                   currentTrajectory->traj[timeIndex],
-                                   currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt );
+            printf(" in this step \n");
+            executeTestStep(hubo, test_counter);
+            if (increasing==true){
+                test_counter++;
+            }
+            else{
+                test_counter--;
+            }
+            if (test_counter>1000){
+                increasing=false;
+            }
+            if (test_counter<=0){
+                increasing=true;
+            }
+            //executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
+            //                       currentTrajectory->traj[timeIndex],
+            //                       currentTrajectory->traj[nextTimeIndex],
+            //                       gains, dt );
             printf("executed a step \n");
 	    fflush(stdout);
         }
@@ -275,6 +292,19 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 }
 
 
+void Ladder::executeTestStep(Hubo_Control &hubo, int counter){
+
+     for (int i=0; i<HUBO_JOINT_COUNT; i++){
+        if (i==LEB){
+                printf("%f , \n ", ((float) counter)/1000);
+                hubo.setJointAngle(i, ((float) counter)/1000);
+        }
+        else{
+                hubo.setJointAngle(i,0);
+        }
+     }
+     hubo.sendControls();
+}
 
 
 bool Ladder::checkForNewTrajectory(zmp_traj_t &newTrajectory, bool haveNewTrajAlready)
@@ -314,10 +344,10 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
     {
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
-		hubo.passJointAngle( i, currentElem.angles[i] );
+		hubo.setJointTraj( i, currentElem.angles[i], 0);
 	  }
 	  else{
- 		hubo.passJointAngle( i, 0);
+ 		hubo.setJointAngle( i, 0);
 		//send 0
 	  }
     }
