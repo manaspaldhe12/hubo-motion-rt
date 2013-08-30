@@ -419,9 +419,255 @@ void Walker::commenceWalking(balance_state_t &parent_state, nudge_state_t &state
     sendState();
 }
 
+/*
+void Walker::commenceClimbing(balance_state_t &parent_state, nudge_state_t &state, balance_gains_t &gains)
+{
+    int timeIndex=0, nextTimeIndex=0, prevTimeIndex=0;
+    keepWalking = true;
+    size_t fs;
+ 
+    zmp_traj_t prevTrajectory, currentTrajectory, nextTrajectory;
+    memset( &prevTrajectory, 0, sizeof(prevTrajectory) );
+    memset( &currentTrajectory, 0, sizeof(currentTrajectory) );
+    memset( &nextTrajectory, 0, sizeof(nextTrajectory) );
+    
+    // TODO: Consider making these values persistent
+    memset( &state, 0, sizeof(state) );
 
 
+    memcpy( &bal_state, &parent_state, sizeof(bal_state) );
 
+    bal_state.m_balance_mode = BAL_ZMP_WALKING; 
+    bal_state.m_walk_mode = WALK_WAITING;
+    bal_state.m_walk_error = NO_WALK_ERROR;
+    sendState();
+
+    currentTrajectory.reuse = true;
+    fprintf(stdout, "Waiting for first trajectory\n"); fflush(stdout);
+    ach_status_t r;
+    do {
+        struct timespec t;
+        clock_gettime( ACH_DEFAULT_CLOCK, &t );
+        t.tv_sec += 1;
+        r = ach_get( &zmp_chan, &currentTrajectory, sizeof(currentTrajectory), &fs,
+                    &t, ACH_O_WAIT | ACH_O_LAST );
+
+        checkCommands();
+        if( cmd.cmd_request != BAL_ZMP_WALKING )
+            keepWalking = false;
+    } while(!daemon_sig_quit && keepWalking && (r==ACH_TIMEOUT
+                || !currentTrajectory.reuse) ); // TODO: Replace this with something more intelligent
+
+    if(!keepWalking || !currentTrajectory.reuse) // TODO: Take out the reuse condition here
+    {
+        bal_state.m_walk_mode = WALK_INACTIVE;
+        sendState();
+        return;
+    }
+
+    if(!daemon_sig_quit)
+        fprintf(stdout, "First trajectory acquired\n");
+    
+        
+    daemon_assert( !daemon_sig_quit, __LINE__ );
+
+    bal_state.m_walk_mode = WALK_INITIALIZING;
+    sendState();
+
+    ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
+
+    hubo.update(true);
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+    {
+        if( LF1!=i && LF2!=i && LF3!=i && LF4!=i && LF5!=i
+         && RF1!=i && RF2!=i && RF3!=i && RF4!=i && RF5!=i
+         && NK1!=i && NK2!=i && NKY!=i )
+        {
+            hubo.setJointAngle( i, currentTrajectory.traj[0].angles[i] );
+            hubo.setJointNominalSpeed( i, 0.4 );
+            hubo.setJointNominalAcceleration( i, 0.4 );
+        }
+    }
+    
+    hubo.setJointNominalSpeed( RKN, 0.8 );
+    hubo.setJointNominalAcceleration( RKN, 0.8 );
+    hubo.setJointNominalSpeed( LKN, 0.8 );
+    hubo.setJointNominalAcceleration( LKN, 0.8 );
+
+    hubo.setJointAngle( RSR, currentTrajectory.traj[0].angles[RSR] + hubo.getJointAngleMax(RSR) );
+    hubo.setJointAngle( LSR, currentTrajectory.traj[0].angles[LSR] + hubo.getJointAngleMin(LSR) );
+
+    hubo.sendControls();
+
+    double m_maxInitTime = 10;
+    double biggestErr = 0;
+    int worstJoint=-1;
+    
+    double dt, time, stime; stime=hubo.getTime(); time=hubo.getTime();
+    double norm = m_jointSpaceTolerance+1; // make sure this fails initially
+    while( !daemon_sig_quit && (norm > m_jointSpaceTolerance && time-stime < m_maxInitTime)) {
+//    while(false) { // FIXME TODO: SWITCH THIS BACK!!!
+        hubo.update(true);
+        norm = 0;
+        for(int i=0; i<HUBO_JOINT_COUNT; i++)
+        {
+            double err=0;
+            if( LF1!=i && LF2!=i && LF3!=i && LF4!=i && LF5!=i
+             && RF1!=i && RF2!=i && RF3!=i && RF4!=i && RF5!=i
+             && NK1!=i && NK2!=i && NKY!=i )
+                err = (hubo.getJointAngleState( i )-currentTrajectory.traj[0].angles[i]);
+            if( LSR == i )
+                err -= hubo.getJointAngleMin(i);
+            if( RSR == i )
+                err -= hubo.getJointAngleMax(i);
+
+            norm += err*err;
+            if( fabs(err) > fabs(biggestErr) )
+            {
+                biggestErr = err;
+                worstJoint = i;
+            }
+        }
+        time = hubo.getTime();
+    }
+
+    if( time-stime >= m_maxInitTime )
+    {
+        fprintf(stderr, "Warning: could not reach the starting Trajectory within %f seconds\n"
+                        " -- Biggest error was %f radians in joint %s\n",
+                        m_maxInitTime, biggestErr, jointNames[worstJoint] );
+
+        keepWalking = false;
+        
+        bal_state.m_walk_error = WALK_INIT_FAILED;
+    }
+
+    int counter=0;
+    timeIndex = 1;
+    bool haveNewTrajectory = false;
+    while(!daemon_sig_quit)
+    {
+        haveNewTrajectory = checkForNewTrajectory(nextTrajectory, haveNewTrajectory);
+        ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
+        hubo.update(true);
+
+        bal_state.m_walk_mode = WALK_IN_PROGRESS;
+
+        dt = hubo.getTime() - time;
+        time = hubo.getTime();
+        if( dt <= 0 )
+        {
+            fprintf(stderr, "Something unnatural has happened... %f\n", dt);
+            continue;
+        }
+
+        if( timeIndex==0 )
+        {
+            bal_state.m_walk_error = NO_WALK_ERROR;
+            nextTimeIndex = timeIndex+1;
+            //executeTimeStep( hubo, prevTrajectory.traj[prevTimeIndex],
+            //                       currentTrajectory.traj[timeIndex],
+            //                       currentTrajectory.traj[nextTimeIndex],
+            //                       state, gains, dt );
+            
+        }
+        else if( timeIndex == currentTrajectory.periodEndTick && haveNewTrajectory )
+        {
+            if( validateNextTrajectory( currentTrajectory.traj[timeIndex],
+                                        nextTrajectory.traj[0], dt ) )
+            {
+                nextTimeIndex = 0;
+                //executeTimeStep( hubo, currentTrajectory.traj[prevTimeIndex],
+                //                       currentTrajectory.traj[timeIndex],
+                //                       nextTrajectory.traj[nextTimeIndex],
+                //                       state, gains, dt );
+                
+                memcpy( &prevTrajectory, &currentTrajectory, sizeof(prevTrajectory) );
+                memcpy( &currentTrajectory, &nextTrajectory, sizeof(nextTrajectory) );
+                fprintf(stderr, "Notice: Swapping in new trajectory\n");
+            }
+            else
+            {
+                fprintf(stderr, "WARNING: Discontinuous trajectory passed in. Walking to a stop.\n");
+                bal_state.m_walk_error = WALK_FAILED_SWAP;
+
+                nextTimeIndex = timeIndex+1;
+                //executeTimeStep( hubo, currentTrajectory.traj[prevTimeIndex],
+                //                       currentTrajectory.traj[timeIndex],
+                //                       currentTrajectory.traj[nextTimeIndex],
+                //                       state, gains, dt );
+            }
+            haveNewTrajectory = false;
+        }
+        else if( timeIndex == currentTrajectory.periodEndTick && currentTrajectory.reuse )
+        {
+            checkCommands();
+            if( cmd.cmd_request != BAL_ZMP_WALKING )
+                currentTrajectory.reuse = false;
+
+            if( currentTrajectory.reuse == true )
+                nextTimeIndex = currentTrajectory.periodStartTick;
+            else
+                nextTimeIndex = timeIndex+1;
+
+            //executeTimeStep( hubo, currentTrajectory.traj[prevTimeIndex],
+            //                       currentTrajectory.traj[timeIndex],
+            //                       currentTrajectory.traj[nextTimeIndex],
+            //                       state, gains, dt );
+        }
+        else if( timeIndex < currentTrajectory.count-1 )
+        {
+            nextTimeIndex = timeIndex+1;
+            counter++; 
+	    executeClimbStep( hubo, counter );
+        }
+        else if( timeIndex == currentTrajectory.count-1 && haveNewTrajectory )
+        {
+            checkCommands();
+            if( cmd.cmd_request != BAL_ZMP_WALKING )
+                keepWalking = false;
+
+            if( keepWalking )
+            {
+                if( validateNextTrajectory( currentTrajectory.traj[timeIndex],
+                                            nextTrajectory.traj[0], dt ) )
+                {
+                    bal_state.m_walk_error = NO_WALK_ERROR;
+                    nextTimeIndex = 0;
+                    //executeTimeStep( hubo, currentTrajectory.traj[prevTimeIndex],
+                    //                       currentTrajectory.traj[timeIndex],
+                    //                       nextTrajectory.traj[nextTimeIndex],
+                    //                       state, gains, dt );
+                    
+                    memcpy( &prevTrajectory, &currentTrajectory, sizeof(prevTrajectory) );
+                    memcpy( &currentTrajectory, &nextTrajectory, sizeof(nextTrajectory) );
+                }
+                else
+                {
+                    bal_state.m_walk_mode = WALK_WAITING;
+                    bal_state.m_walk_error = WALK_FAILED_SWAP;
+                    fprintf(stderr, "WARNING: Discontinuous trajectory passed in. Discarding it.\n");
+                }
+                haveNewTrajectory = false;
+            }
+        }
+        else
+        {
+            checkCommands();
+            if( cmd.cmd_request != BAL_ZMP_WALKING )
+                keepWalking = false;
+        }
+
+        prevTimeIndex = timeIndex;
+        timeIndex = nextTimeIndex;
+        sendState();
+    }
+
+    bal_state.m_walk_mode = WALK_INACTIVE;
+    sendState();
+}
+
+*/
 bool Walker::checkForNewTrajectory(zmp_traj_t &newTrajectory, bool haveNewTrajAlready)
 {
     size_t fs;

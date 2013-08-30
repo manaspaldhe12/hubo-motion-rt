@@ -192,12 +192,12 @@ int main(int argc, char **argv)
 		printf("into the OVR_ACQUIESCENT \n");
                 for (int i=0; i<1000; i++){
 			fprintf(stdout, "%f \n",0.2*(float (i))/1000);
-			hubo.setJointAngle(LEB, 0.2*(float (i)/1000));
+			hubo.passJointAngle(LEB, 0.2*(float (i)/1000));
 			hubo.sendControls();
 		}
                 for (int i=1000; i>0; i--){
 			fprintf(stdout, "%f \n",0.2*(float (i))/1000);
-			hubo.setJointAngle(LEB, 0.2*(float (i)/1000));
+			hubo.passJointAngle(LEB, 0.2*(float (i)/1000));
 			hubo.sendControls();
 		}
 
