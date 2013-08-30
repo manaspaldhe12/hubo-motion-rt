@@ -80,7 +80,9 @@ void moveHips(Hubo_Control &hubo, DrcHuboKin &kin, std::vector<LegVector, Eigen:
 int main(int argc, char **argv)
 {
     //Hubo_Control hubo("balance-daemon", 35);
-    Hubo_Control hubo(false);
+    Hubo_Control hubo;//false);
+    hubo.setJointAngle(REB, -M_PI/2);
+    hubo.setJointAngle(LEB, -M_PI/2);
     DrcHuboKin kin;
     std::cout << "In balance daemon\n";
 
@@ -176,6 +178,8 @@ int main(int argc, char **argv)
         }
 	else if (BAL_LADDER_CLIMBING == cmd.cmd_request){
 	    printf("into Bal_LADDER_CLIMBING \n");
+	    hubo.setJointAngle(LEB,0);
+	    hubo.setJointAngle(REB,0);
 	    ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
                         &fs, NULL, ACH_O_LAST );
 
