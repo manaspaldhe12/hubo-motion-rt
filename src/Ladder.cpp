@@ -181,9 +181,14 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 
     timeIndex = 1;
     bool haveNewTrajectory = false;
+<<<<<<< HEAD
+    int test_counter = 0;
+    bool increasing=true; 
+=======
 
     int test_counter=0;
     bool increasing=true;
+>>>>>>> e7ea18613f10476a0580d7239a2fcee379004faa
 
     while(!daemon_sig_quit)
     {
@@ -257,6 +262,26 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         else if( timeIndex < currentTrajectory->count-1 )
         {
             nextTimeIndex = timeIndex+1;
+<<<<<<< HEAD
+	    printf(" in this step \n");
+            /*executeTestStep(hubo, test_counter);
+	    if (increasing==true){
+		test_counter++;
+	    }
+	    else{
+		test_counter--;
+	    }
+	    if (test_counter>1000){
+		increasing=false;
+	    }
+	    if (test_counter<=0){
+		increasing=true;
+ 	    }*/
+	    executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
+                                   currentTrajectory->traj[timeIndex],
+                                   currentTrajectory->traj[nextTimeIndex],
+                                   gains, dt );
+=======
             printf(" in this step \n");
             executeTestStep(hubo, test_counter);
             if (increasing==true){
@@ -275,6 +300,7 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
             //                       currentTrajectory->traj[timeIndex],
             //                       currentTrajectory->traj[nextTimeIndex],
             //                       gains, dt );
+>>>>>>> e7ea18613f10476a0580d7239a2fcee379004faa
             printf("executed a step \n");
 	    fflush(stdout);
         }
@@ -333,6 +359,20 @@ bool Ladder::validateNextTrajectory( zmp_traj_element_t &current, zmp_traj_eleme
     return valid;
 }
 
+void Ladder::executeTestStep(Hubo_Control &hubo, int counter){
+
+     for (int i=0; i<HUBO_JOINT_COUNT; i++){
+	if (i==LEB){
+		printf("%f , \n ", ((float) counter)/1000);
+		hubo.setJointAngle(i, ((float) counter)/1000);
+	}
+	else{
+		hubo.setJointAngle(i,0);
+	}
+     }
+     hubo.sendControls();
+}
+
 
 void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
@@ -342,15 +382,25 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
+<<<<<<< HEAD
+	  printf("%f , ",currentElem.angles[i]);
+	  //if (i==LEB){
+	  hubo.passJointAngle( i, currentElem.angles[i] );
+	  //}
+	  //else{
+ 		//hubo.passJointAngle( i, 0);
+=======
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
 		hubo.setJointTraj( i, currentElem.angles[i], 0);
 	  }
 	  else{
  		hubo.setJointAngle( i, 0);
+>>>>>>> e7ea18613f10476a0580d7239a2fcee379004faa
 		//send 0
-	  }
+	  //}
     }
+    printf("\n ");
     hubo.sendControls();
     printf("out of the loop \n");
 }

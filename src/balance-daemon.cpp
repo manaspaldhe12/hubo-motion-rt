@@ -85,6 +85,10 @@ int main(int argc, char **argv)
     hubo.setJointAngle(LEB, -M_PI/2);
     DrcHuboKin kin;
     std::cout << "In balance daemon\n";
+    Hubo_Control hubo("balance-daemon", 35);
+    //Hubo_Control hubo;
+
+    DrcHuboKin kin;
 
     hubo.storeAllDefaults();
 
@@ -125,6 +129,10 @@ int main(int argc, char **argv)
     hubo.update(false);
     double dt, time=hubo.getTime();
     printf("entering the loop \n");
+
+    hubo.update();
+
+    double dt, time=hubo.getTime();
     size_t fs;
     while( !daemon_sig_quit )
     {
@@ -134,7 +142,7 @@ int main(int argc, char **argv)
         time = hubo.getTime();
         /* if( dt <= 0 )
         {
-            fprintf(stderr, "Something unnatural has happened... %f\n", dt);
+            fprintf(stderr, "Something unnatural has happened in the balance daemon... %f\n", dt);
             continue;
         }*/
 
@@ -163,6 +171,8 @@ int main(int argc, char **argv)
                 ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
 	 
                 staticBalance(hubo, kin, cmd, gains, dt);
+
+                //staticBalance(hubo, kin, cmd, gains, dt);
             }
             else if( OVR_ACQUIESCENT == manip_state.override )
             {
