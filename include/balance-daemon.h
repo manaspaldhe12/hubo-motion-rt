@@ -43,9 +43,6 @@
 #define BALANCE_STATE_CHAN "balance-state"
 #define BALANCE_PARAM_CHAN "balance-param"
 #define HUBO_CHAN_LADDER_TRAJ_NAME "ladder-cmd"
-#define HUBO_CHAN_CORRECTION_TRAJ_NAME "correction-cmd"
-
-
 typedef enum {
 
     BAL_READY=0,
@@ -101,7 +98,7 @@ typedef struct balance_gains {
     double double_support_hip_nudge_kp;
     double double_support_hip_nudge_kd;
 
-}__attribute__((packed)) balance_gains_t;
+} balance_gains_t;
 
 
 
@@ -113,7 +110,7 @@ typedef struct balance_cmd {
     double height;
     double com_x_offset;
 
-}__attribute__((packed)) balance_cmd_t;
+} balance_cmd_t;
 
 typedef struct balance_state {
 
@@ -122,7 +119,7 @@ typedef struct balance_state {
     walk_mode_t m_walk_mode;
     walk_error_t m_walk_error;
 
-}__attribute__((packed)) balance_state_t;
+} balance_state_t;
 
 
 typedef enum {

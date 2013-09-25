@@ -37,7 +37,6 @@
 #ifndef LADDER_ACH_H
 #define LADDER_ACH_H
 #define LADDER_PLANNERINITCHAN "ladderplanner"
-#define CORRECTION_PLANNERINITCHAN "correctionplanner"
 
 typedef struct LadderPlanner{
 	double rung_width;
@@ -57,32 +56,6 @@ typedef struct LadderPlanner{
 	double theta;
 
 } LadderPlanner_t;
-
-typedef struct CorrectionParams{
-
-	double left_hand_x;
-	double left_hand_y;
-	double left_hand_z;
-	double left_hand_roll;
-	double left_hand_pitch;
-	double left_hand_yaw;
-
-	double right_hand_x;
-	double right_hand_y;
-	double right_hand_z;
-	double right_hand_roll;
-	double right_hand_pitch;
-	double right_hand_yaw;
-
-	double legs_x;
-	double legs_y;
-	double legs_z;
-	double legs_yaw;
-
-} CorrectionParams_t;
-
-
-
 
 #endif//LADDER_ACH_H
 

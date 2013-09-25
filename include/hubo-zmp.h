@@ -6,7 +6,7 @@
  * GUI and the zmp-daemon, and between the zmp-daemon
  * and the walker
  *
- * \author M.X. Grey and friends
+ * \author M.X. Grey
 */
 
 #ifndef _HUBO_ZMP_H_
@@ -68,11 +68,11 @@ enum walkState_t {
 };
 
 /// String constants for walkState enum
-static const char* walkStateStrings[NUM_OF_WALKSTATES+2] = {"WALKING_FORWARD", "WALKING_BACKWARD",
+static const char* walkStateStrings[NUM_OF_WALKSTATES+2] = {"WALKING_FORWARD", "WALKING_BACKWARD", 
                                                         "ROTATING_LEFT", "ROTATING_RIGHT",
                                                         "SIDESTEPPING_LEFT", "SIDESTEPPING_RIGHT",
                                                         "TURNING_LEFT", "TURNING_RIGHT"};
-
+ 
 /// ZMP trajectory constants
 enum {
   ZMP_TRAJ_FREQ_HZ = 200,   //!< frequency in Hertz of the zmp trajectory
@@ -125,5 +125,3 @@ typedef struct walker_state {
 
 
 #endif // _HUBO_ZMP_H_
-~                             
-
