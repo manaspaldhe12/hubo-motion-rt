@@ -258,23 +258,10 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         {
             nextTimeIndex = timeIndex+1;
             printf(" in this step \n");
-            executeTestStep(hubo, test_counter);
-            if (increasing==true){
-                test_counter++;
-            }
-            else{
-                test_counter--;
-            }
-            if (test_counter>1000){
-                increasing=false;
-            }
-            if (test_counter<=0){
-                increasing=true;
-            }
-            //executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
-            //                       currentTrajectory->traj[timeIndex],
-            //                       currentTrajectory->traj[nextTimeIndex],
-            //                       gains, dt );
+            executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
+                                   currentTrajectory->traj[timeIndex],
+                                   currentTrajectory->traj[nextTimeIndex],
+                                   gains, dt );
             printf("executed a step \n");
 	    fflush(stdout);
         }
@@ -290,6 +277,205 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 
     sendState();
 }
+
+
+void Ladder::commenceCorrection(balance_state_t &parent_state, balance_gains_t &gains)
+{
+    std::cerr << "In commence climbing" << std::endl;
+    fflush(stderr);
+    
+    int timeIndex=0, nextTimeIndex=0, prevTimeIndex=0;
+    size_t fs;
+ 
+    zmp_traj_t *currentTrajectory, *prevTrajectory, *nextTrajectory;
+    currentTrajectory = new zmp_traj_t;
+    prevTrajectory = new zmp_traj_t;
+    nextTrajectory = new zmp_traj_t;
+    memset( currentTrajectory, 0, sizeof(*currentTrajectory) );
+    memset( prevTrajectory, 0, sizeof(*prevTrajectory) );
+    memset( nextTrajectory, 0, sizeof(*nextTrajectory) );
+    
+    // TODO: Consider making these values persistent
+    //memset( &state, 0, sizeof(state) );
+
+    memcpy( &bal_state, &parent_state, sizeof(bal_state) );
+
+    bal_state.m_balance_mode = BAL_LADDER_CLIMBING;
+    sendState();
+
+    fprintf(stdout, "Waiting for first trajectory\n"); fflush(stdout);
+    ach_status_t r;
+    do {
+        struct timespec t;
+        clock_gettime( ACH_DEFAULT_CLOCK, &t );
+        t.tv_sec += 1;
+        r = ach_get( &ladder_chan, currentTrajectory, sizeof(*currentTrajectory), &fs,
+                    &t, ACH_O_WAIT | ACH_O_LAST );
+  	std::cout << "ladder traj ach_get result: " << ach_result_to_string(r) << "\n";
+
+        checkCommands();
+    } while(!daemon_sig_quit  && r==ACH_TIMEOUT); 
+
+    if(!daemon_sig_quit)
+        fprintf(stdout, "First trajectory acquired\n");
+    
+        
+    daemon_assert( !daemon_sig_quit, __LINE__ );
+
+    ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
+
+    hubo.update(true);
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+    {
+        if( LF1!=i && LF2!=i && LF3!=i && LF4!=i && LF5!=i
+         && RF1!=i && RF2!=i && RF3!=i && RF4!=i && RF5!=i
+         && NK1!=i && NK2!=i && NKY!=i )
+        {
+            hubo.setJointAngle( i, currentTrajectory->traj[0].angles[i] );
+            hubo.setJointNominalSpeed( i, 0.4 );
+            hubo.setJointNominalAcceleration( i, 0.4 );
+        }
+    }
+    
+    hubo.setJointNominalSpeed( RKN, 0.8 );
+    hubo.setJointNominalAcceleration( RKN, 0.8 );
+    hubo.setJointNominalSpeed( LKN, 0.8 );
+    hubo.setJointNominalAcceleration( LKN, 0.8 );
+
+    hubo.sendControls();
+
+    double m_maxInitTime = 10;
+    double biggestErr = 0;
+    int worstJoint=-1;
+    
+    double dt, time, stime; stime=hubo.getTime(); time=hubo.getTime();
+    double norm = m_jointSpaceTolerance+1; // make sure this fails initially
+    while( !daemon_sig_quit && (norm > m_jointSpaceTolerance && time-stime < m_maxInitTime)) {
+        hubo.update(true);
+        norm = 0;
+        for(int i=0; i<HUBO_JOINT_COUNT; i++)
+        {
+            double err=0;
+            if( LF1!=i && LF2!=i && LF3!=i && LF4!=i && LF5!=i
+             && RF1!=i && RF2!=i && RF3!=i && RF4!=i && RF5!=i
+             && NK1!=i && NK2!=i && NKY!=i )
+                err = (hubo.getJointAngleState( i )-currentTrajectory->traj[0].angles[i]);
+            norm += err*err;
+            if( fabs(err) > fabs(biggestErr) )
+            {
+                biggestErr = err;
+                worstJoint = i;
+            }
+        }
+        time = hubo.getTime();
+    }
+
+    if( time-stime >= m_maxInitTime )
+    {
+        fprintf(stderr, "Warning: could not reach the starting Trajectory within %f seconds\n"
+                        " -- Biggest error was %f radians in joint %s\n",
+                        m_maxInitTime, biggestErr, jointNames[worstJoint] );
+    }
+
+    timeIndex = 1;
+    bool haveNewTrajectory = false;
+
+    int test_counter=0;
+    bool increasing=true;
+
+    while(!daemon_sig_quit)
+    {
+        haveNewTrajectory = checkForNewTrajectory(*nextTrajectory, haveNewTrajectory);
+        ach_get( &param_chan, &gains, sizeof(gains), &fs, NULL, ACH_O_LAST );
+        hubo.update(true);
+	printf("timeindex is %d \n", timeIndex);
+
+        dt = hubo.getTime() - time;
+        time = hubo.getTime();
+        /*if( dt <= 0 )
+        {
+            fprintf(stderr, "Something unnatural has happened... %f\n", dt);
+            continue;
+        }*/
+
+        if( timeIndex==0 )
+        {
+            nextTimeIndex = timeIndex+1;
+            //executeTimeStep( hubo, prevTrajectory->traj[prevTimeIndex],
+            //                       currentTrajectory->traj[timeIndex],
+            //                       currentTrajectory->traj[nextTimeIndex],
+            //                       gains, dt );
+            
+        }
+        else if( timeIndex == currentTrajectory->periodEndTick && haveNewTrajectory )
+        { // Note: This should never happen
+            if( validateNextTrajectory( currentTrajectory->traj[timeIndex],
+                                        nextTrajectory->traj[0], dt ) )
+            {
+                nextTimeIndex = 0;
+              //  executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+              //                         currentTrajectory->traj[timeIndex],
+              //                         nextTrajectory->traj[nextTimeIndex],
+              //                         gains, dt );
+                
+                memcpy( prevTrajectory, currentTrajectory, sizeof(*prevTrajectory) );
+                memcpy( currentTrajectory, nextTrajectory, sizeof(*nextTrajectory) );
+                fprintf(stderr, "Notice: Swapping in new trajectory\n");
+            }
+            else
+            {
+                fprintf(stderr, "WARNING: Discontinuous trajectory passed in. Stop.\n");
+                bal_state.m_walk_error = WALK_FAILED_SWAP;
+
+                nextTimeIndex = timeIndex+1;
+            //    executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+            //                           currentTrajectory->traj[timeIndex],
+            //                           currentTrajectory->traj[nextTimeIndex],
+            //                           gains, dt );
+            }
+            haveNewTrajectory = false;
+        }
+        else if( timeIndex == currentTrajectory->periodEndTick && currentTrajectory->reuse )
+        { // Note: This should also never happen
+            fprintf(stderr, "You have commanded me to reuse a trajectory!\n");
+            checkCommands();
+            if( cmd.cmd_request != BAL_ZMP_WALKING )
+                currentTrajectory->reuse = false;
+
+            if( currentTrajectory->reuse == true )
+                nextTimeIndex = currentTrajectory->periodStartTick;
+            else
+                nextTimeIndex = timeIndex+1;
+
+         //   executeTimeStep( hubo, currentTrajectory->traj[prevTimeIndex],
+         //                          currentTrajectory->traj[timeIndex],
+         //                          currentTrajectory->traj[nextTimeIndex],
+         //                          gains, dt );
+        }
+        else if( timeIndex < currentTrajectory->count-1 )
+        {
+            nextTimeIndex = timeIndex+1;
+            printf(" in this step \n");
+            executeCorrectionStep( hubo,currentTrajectory->traj[prevTimeIndex],
+                                   currentTrajectory->traj[timeIndex],
+                                   currentTrajectory->traj[nextTimeIndex],
+                                   gains, dt );
+            printf("executed a step \n");
+	    fflush(stdout);
+        }
+        else
+        {
+            checkCommands();
+        }
+
+        prevTimeIndex = timeIndex;
+        timeIndex = nextTimeIndex;
+        sendState();
+    }
+
+    sendState();
+}
+
 
 
 void Ladder::executeTestStep(Hubo_Control &hubo, int counter){
@@ -335,6 +521,28 @@ bool Ladder::validateNextTrajectory( zmp_traj_element_t &current, zmp_traj_eleme
 
 
 void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
+            zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+            balance_gains_t &gains, double dt )
+{
+    double vel, accel;
+
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+    {
+	  if (i==LEB){
+	  	printf("%f , \n",currentElem.angles[i]);
+		hubo.setJointTraj( i, currentElem.angles[i], 0);
+	  }
+	  else{
+ 		hubo.setJointAngle( i, 0);
+		//send 0
+	  }
+    }
+    hubo.sendControls();
+    printf("out of the loop \n");
+}
+
+
+void Ladder::executeCorrectionStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt )
 {

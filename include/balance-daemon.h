@@ -48,8 +48,8 @@ typedef enum {
     BAL_READY=0,
     BAL_LEGS_ONLY,
     BAL_ZMP_WALKING,
-    BAL_LADDER_CLIMBING
-      
+    BAL_LADDER_CLIMBING,
+    CORRECTION      
 /*
     STATE_INVALID,
     S_HORSE,

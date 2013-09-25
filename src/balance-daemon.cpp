@@ -196,19 +196,28 @@ int main(int argc, char **argv)
             {*/
 		hubo.update(true);	
 		printf("into the OVR_ACQUIESCENT \n");
-                for (int i=0; i<1000; i++){
-			fprintf(stdout, "%f \n",0.2*(float (i))/1000);
-			hubo.passJointAngle(LEB, 0.2*(float (i)/1000));
-			hubo.sendControls();
-		}
-                for (int i=1000; i>0; i--){
-			fprintf(stdout, "%f \n",0.2*(float (i))/1000);
-			hubo.passJointAngle(LEB, 0.2*(float (i)/1000));
-			hubo.sendControls();
-		}
+		ladder_climber.commenceClimbing(state, gains);
+		printf("done ladder climbing\n");
+                ovr.m_override = OVR_SOVEREIGN;
+                ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
+                // Probably not necessary...
+                hubo.releaseLeftArm();
+                hubo.releaseRightArm();
+                hubo.releaseBody();
+                hubo.releaseNeck();
+            //}
+
+	}
+	else if (CORRECTION == cmd.cmd_request){
+	    printf("Correction \n");
+	    ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
+                        &fs, NULL, ACH_O_LAST );
+
+		hubo.update(true);	
+		printf("into the OVR_ACQUIESCENT \n");
 
 		//ladder_climber.commenceClimbing(state, gains);
-		printf("done ladder climbing\n");
+		printf("done correction\n");
                 ovr.m_override = OVR_SOVEREIGN;
                 ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
                 // Probably not necessary...
