@@ -40,8 +40,9 @@
 #ifndef WALKER_H
 #define WALKER_H
 
+#include "Hubo_Control.h"
+#include "balance-daemon.h"
 #include "hubo-zmp.h"
-#include "ImpedanceController.h"
 
 typedef struct nudge_state {
 
@@ -117,12 +118,6 @@ protected:
 
     /// Hubo_Control object used to get state info and send commands. 
     Hubo_Control hubo;
-
-    /// DrcHuboKin object
-    DrcHuboKin kin;
-
-    /// ImpedanceController object
-    ImpedanceController impCtrl;
 
     /**
      * \brief Executes trajectory for current timestep using controllers

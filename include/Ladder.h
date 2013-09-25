@@ -83,14 +83,7 @@ protected:
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt );
 
-<<<<<<< HEAD
-     void executeTestStep(Hubo_Control &hubo, int counter);
-
-
-
-=======
     void executeTestStep(Hubo_Control &hubo, int counter);
->>>>>>> e7ea18613f10476a0580d7239a2fcee379004faa
 
 };
 

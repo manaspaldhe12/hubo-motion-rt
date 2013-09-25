@@ -933,7 +933,7 @@ void Walker::executeTimeStep( Hubo_Control &hubo, zmp_traj_element_t &prevElem,
     // current timestep, which has been adjusted based on feedback.
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
-
+	double vel, accel;
         vel = (nextElem.angles[i]-currentElem.angles[i])*ZMP_TRAJ_FREQ_HZ;
         hubo.setJointTraj( i, currentElem.angles[i], vel );
 //        hubo.setJointTraj( i, nextElem.angles[i] );
@@ -951,14 +951,11 @@ void Walker::executeTimeStep( Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 //    hubo.setJointAngle( LSR, nextElem.angles[LSR] + hubo.getJointAngleMin(LSR) );
     hubo.setJointTraj( RSR, currentElem.angles[RSR] + hubo.getJointAngleMax(RSR), 0 );
     hubo.setJointTraj( LSR, currentElem.angles[LSR] + hubo.getJointAngleMin(LSR), 0 );
-        hubo.passJointAngle( i, tempNextElem.angles[i] );
-
-    }
 
     hubo.setJointAngleMin( LHR, currentElem.angles[RHR]-M_PI/2.0 );
     hubo.setJointAngleMax( RHR, currentElem.angles[LHR]+M_PI/2.0 );
 
-  hubo.sendControls();
+    hubo.sendControls();
 }
 
 
