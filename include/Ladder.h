@@ -56,6 +56,7 @@ public:
 
     void commenceClimbing(balance_state_t &parent_state,  balance_gains_t &gains);
     void commenceCorrection(balance_state_t &parent_state,  balance_gains_t &gains);
+    void changeJointAngles(double joint_positions[], Hubo_Control &hubo);
     
     double m_jointSpaceTolerance;
     double m_jointVelContTol;

@@ -279,6 +279,23 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
 }
 
 
+void Ladder::changeJointAngles(double joint_positions[], Hubo_Control &hubo){
+
+	double current_angles[HUBO_JOINT_COUNT];
+	for (int interpolate=0; interpolate<10;  interpolate++){
+		for (int joint=0; joint<HUBO_JOINT_COUNT; joint++){
+			double start_angle = hubo.getJointAngle(joint);
+			double end_angle = joint_positions[joint];
+			current_angles[joint]=start_angle + interpolate*(end_angle-start_angle)/10;
+			hubo.setJointAngle(joint, current_angles[joint]);
+			printf("joint %d is going to %lf \n", joint,current_angles[joint]);
+		}	
+		//hubo.sendControls();
+	}
+
+}
+
+
 void Ladder::commenceCorrection(balance_state_t &parent_state, balance_gains_t &gains)
 {
     std::cerr << "In commence climbing" << std::endl;

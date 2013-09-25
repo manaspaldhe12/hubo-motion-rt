@@ -220,7 +220,24 @@ int main(int argc, char **argv)
 		printf("done correction\n");
                 ovr.m_override = OVR_SOVEREIGN;
                 ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
-                // Probably not necessary...
+                hubo.releaseLeftArm();
+                hubo.releaseRightArm();
+                hubo.releaseBody();
+                hubo.releaseNeck();
+            //}
+
+	}
+	else if (MOVE_JOINT== cmd.cmd_request){
+	    printf("Move joint \n");
+	    ach_get( &manip_state_chan, &manip_state, sizeof(manip_state),
+                        &fs, NULL, ACH_O_LAST );
+
+		hubo.update(true);	
+
+		//ladder_climber.commenceJointMovement(state, gains);
+		printf("done moving");
+                ovr.m_override = OVR_SOVEREIGN;
+                ach_put( &manip_override_chan, &ovr, sizeof(ovr) );
                 hubo.releaseLeftArm();
                 hubo.releaseRightArm();
                 hubo.releaseBody();

@@ -37,6 +37,7 @@
 #ifndef LADDER_ACH_H
 #define LADDER_ACH_H
 #define LADDER_PLANNERINITCHAN "ladderplanner"
+#define LADDER_PLANNERINITCHAN "correctionplanner"
 
 typedef struct LadderPlanner{
 	double rung_width;
@@ -57,5 +58,10 @@ typedef struct LadderPlanner{
 
 } LadderPlanner_t;
 
+typedef struct JointPositionCorrector{
+	double joint_values[HUBO_JOINT_COUNT];
+} JointPositionCorrector_t;
+
 #endif//LADDER_ACH_H
+
 
