@@ -262,7 +262,6 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         else if( timeIndex < currentTrajectory->count-1 )
         {
             nextTimeIndex = timeIndex+1;
-<<<<<<< HEAD
 	    printf(" in this step \n");
             /*executeTestStep(hubo, test_counter);
 	    if (increasing==true){
@@ -281,7 +280,6 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
                                    currentTrajectory->traj[timeIndex],
                                    currentTrajectory->traj[nextTimeIndex],
                                    gains, dt );
-=======
             printf(" in this step \n");
             executeTestStep(hubo, test_counter);
             if (increasing==true){
@@ -382,21 +380,18 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
-<<<<<<< HEAD
 	  printf("%f , ",currentElem.angles[i]);
 	  //if (i==LEB){
 	  hubo.passJointAngle( i, currentElem.angles[i] );
 	  //}
 	  //else{
  		//hubo.passJointAngle( i, 0);
-=======
 	  if (i==LEB){
 	  	printf("%f , \n",currentElem.angles[i]);
 		hubo.setJointTraj( i, currentElem.angles[i], 0);
 	  }
 	  else{
  		hubo.setJointAngle( i, 0);
->>>>>>> e7ea18613f10476a0580d7239a2fcee379004faa
 		//send 0
 	  //}
     }
