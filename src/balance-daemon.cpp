@@ -125,10 +125,6 @@ int main(int argc, char **argv)
     hubo.update(false);
     double dt, time=hubo.getTime();
     printf("entering the loop \n");
-
-    hubo.update();
-
-    double dt, time=hubo.getTime();
     size_t fs;
     while( !daemon_sig_quit )
     {
