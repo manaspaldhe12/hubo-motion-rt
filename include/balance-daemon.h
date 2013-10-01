@@ -44,7 +44,6 @@
 #define BALANCE_PARAM_CHAN "balance-param"
 #define HUBO_CHAN_LADDER_TRAJ_NAME "ladder-cmd"
 #define HUBO_CHAN_CORRECTION_TRAJ_NAME "correction-cmd"
-#define HUBO_CHAN_CORRECTION_TRAJ_NAME "joint-cmd"
 
 typedef enum {
 

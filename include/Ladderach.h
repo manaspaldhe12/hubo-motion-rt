@@ -37,7 +37,7 @@
 #ifndef LADDER_ACH_H
 #define LADDER_ACH_H
 #define LADDER_PLANNERINITCHAN "ladderplanner"
-#define LADDER_PLANNERINITCHAN "correctionplanner"
+#define CORRECTION_PLANNERINITCHAN "correctionplanner"
 
 typedef struct LadderPlanner{
 	double rung_width;
@@ -57,6 +57,30 @@ typedef struct LadderPlanner{
 	double theta;
 
 } LadderPlanner_t;
+
+
+typedef struct CorrectionParams{
+     double left_hand_x;//leftHand_xBox->value();
+     double left_hand_y;//leftHand_yBox->value();
+     double left_hand_z;//leftHand_zBox->value();
+     double left_hand_roll;//leftHand_rollBox->value();
+     double left_hand_pitch;//leftHand_pitchBox->value();
+     double left_hand_yaw;//leftHand_yawBox->value();
+
+     double right_hand_x;//rightHand_xBox->value();
+     double right_hand_y;//rightHand_yBox->value();
+     double right_hand_z;//rightHand_zBox->value();
+     double right_hand_roll;//rightHand_rollBox->value();
+     double right_hand_pitch;//rightHand_pitchBox->value();
+     double right_hand_yaw;//rightHand_yawBox->value();
+
+     double legs_x;//legs_xBox->value();
+     double legs_y;//legs_yBox->value();
+     double legs_z;//legs_zBox->value();
+     double legs_yaw;
+
+
+} CorrectionParams_t;
 
 typedef struct JointPositionCorrector{
 	double joint_values[40];
