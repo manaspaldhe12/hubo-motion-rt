@@ -59,7 +59,7 @@ typedef struct LadderPlanner{
 } LadderPlanner_t;
 
 typedef struct JointPositionCorrector{
-	double joint_values[HUBO_JOINT_COUNT];
+	double joint_values[40];
 } JointPositionCorrector_t;
 
 #endif//LADDER_ACH_H
