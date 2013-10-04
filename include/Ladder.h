@@ -53,6 +53,7 @@ public:
     ach_channel_t param_chan;
     ach_channel_t bal_cmd_chan;
     ach_channel_t bal_state_chan;
+    ach_channel_t traj_params_chan;
 
     void commenceClimbing(balance_state_t &parent_state,  balance_gains_t &gains);
     void commenceCorrection(balance_state_t &parent_state,  balance_gains_t &gains);
@@ -84,6 +85,11 @@ protected:
     void executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
             balance_gains_t &gains, double dt );
+
+    void executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
+            zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+            balance_gains_t &gains, double dt, bool compliance_flag );
+
 
     void executeCorrectionStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,

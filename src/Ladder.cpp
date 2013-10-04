@@ -96,7 +96,8 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
     memset( currentTrajectory, 0, sizeof(*currentTrajectory) );
     memset( prevTrajectory, 0, sizeof(*prevTrajectory) );
     memset( nextTrajectory, 0, sizeof(*nextTrajectory) );
-    
+    TrajectoryFollowerParams_t traj_params;
+    memset(&traj_params, 0, sizeof(traj_params)); 
     // TODO: Consider making these values persistent
     //memset( &state, 0, sizeof(state) );
 
@@ -256,12 +257,23 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         }
         else if( timeIndex < currentTrajectory->count-1 )
         {
+	   r = ach_open(&traj_params_chan, HUBO_CHAN_TRAJECTORY_PARAMS, NULL );
+	   if( r != ACH_OK )
+      		fprintf( stderr, "Problem with channel %s: %s (%d)\n", HUBO_CHAN_TRAJECTORY_PARAMS, ach_result_to_string(r), (int)r );
+	  
+           ach_get( &traj_params_chan, &traj_params, sizeof(traj_params), &fs, NULL, ACH_O_LAST );
+
+	    while (traj_params.pause_flag==true){
+		ach_get( &traj_params_chan, &traj_params, sizeof(traj_params), &fs, NULL, ACH_O_LAST );
+	   	printf("paused now \n");
+	     }	   
+ 
             nextTimeIndex = timeIndex+1;
             printf(" in this step \n");
-            executeTimeStep( hubo,currentTrajectory->traj[prevTimeIndex],
+            executeTimeStepCompliance( hubo,currentTrajectory->traj[prevTimeIndex],
                                    currentTrajectory->traj[timeIndex],
                                    currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt );
+                                   gains, dt, traj_params.compliance_flag );
             printf("executed a step \n");
 	    fflush(stdout);
         }
@@ -471,6 +483,7 @@ void Ladder::commenceCorrection(balance_state_t &parent_state, balance_gains_t &
         }
         else if( timeIndex < currentTrajectory->count-1 )
         {
+	   
             nextTimeIndex = timeIndex+1;
             printf(" in this step \n");
             executeCorrectionStep( hubo,currentTrajectory->traj[prevTimeIndex],
@@ -546,10 +559,34 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
 	  printf("%f , \n",currentElem.angles[i]);
-	//	hubo.setJointTraj( i, currentElem.angles[i], 0);
+   	  hubo.setJointTraj( i, currentElem.angles[i], 0);
     }
     hubo.sendControls();
     printf("out of the loop \n");
+}
+
+void Ladder::executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
+            zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
+            balance_gains_t &gains, double dt, bool compliance_flag)
+{
+    double vel, accel;
+
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+    {
+	  printf("%f , \n",currentElem.angles[i]);
+	  hubo.setJointTraj( i, currentElem.angles[i], 0);
+    	  hubo.setJointCompliance(i, compliance_flag);
+    }
+    hubo.sendControls();
+    if (compliance_flag==true){
+	printf("compliance is on \n");
+    }
+    if (compliance_flag==true){
+	printf("compliance is on \n");
+    }
+
+
+   printf("out of the loop \n");
 }
 
 
