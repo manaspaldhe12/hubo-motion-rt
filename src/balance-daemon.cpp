@@ -81,8 +81,6 @@ int main(int argc, char **argv)
 {
     //Hubo_Control hubo("balance-daemon", 35);
     Hubo_Control hubo;//false);
-    hubo.setJointAngle(REB, -M_PI/2);
-    hubo.setJointAngle(LEB, -M_PI/2);
     DrcHuboKin kin;
     std::cout << "In balance daemon\n";
 

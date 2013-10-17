@@ -85,6 +85,8 @@ typedef struct CorrectionParams{
 typedef struct TrajectoryFollowerParams{
 	bool compliance_flag;//=true;
 	bool pause_flag;//=false;
+	bool left_hand_compliance;
+	bool right_hand_compliance;
 } TrajectoryFollowerParams_t;
 
 typedef struct JointPositionCorrector{
