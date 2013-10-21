@@ -85,6 +85,7 @@ target_link_libraries(gravityTest drchubokin huboctrl RobotKin m rt ach hubopara
 # Install Libraries
 INSTALL(TARGETS daemonizer
                 huboctrl
+		drchubokin
         DESTINATION ${LIBRARY_INSTALL_PATH})
 
 # Install Headers
