@@ -88,7 +88,7 @@ protected:
 
     void executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
-            balance_gains_t &gains, double dt, bool compliance_flag );
+            balance_gains_t &gains, double dt, bool compliance_flag, bool left_hand_compliance, bool right_hand_compliance);
 
 
     void executeCorrectionStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,

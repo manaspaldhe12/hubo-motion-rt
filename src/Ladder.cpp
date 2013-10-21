@@ -273,7 +273,7 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
             executeTimeStepCompliance( hubo,currentTrajectory->traj[prevTimeIndex],
                                    currentTrajectory->traj[timeIndex],
                                    currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt, traj_params.compliance_flag );
+                                   gains, dt, traj_params.compliance_flag, traj_params.left_hand_compliance, traj_params.right_hand_compliance );
             printf("executed a step \n");
 	    fflush(stdout);
         }
@@ -567,7 +567,7 @@ void Ladder::executeTimeStep(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
 
 void Ladder::executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &prevElem,
             zmp_traj_element_t &currentElem, zmp_traj_element &nextElem,
-            balance_gains_t &gains, double dt, bool compliance_flag)
+            balance_gains_t &gains, double dt, bool compliance_flag, bool left_hand_compliance, bool right_hand_compliance)
 {
     double vel, accel;
 
@@ -575,18 +575,39 @@ void Ladder::executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &p
     {
 	  printf("%f , \n",currentElem.angles[i]);
 	  hubo.setJointTraj( i, currentElem.angles[i], 0);
-    	  hubo.setJointCompliance(i, compliance_flag);
+	  if ((compliance_flag || left_hand_compliance) && (i>=4) &&(i<=10)){
+		hubo.setJointCompliance(i, true);
+	  }
+	  else if ((compliance_flag || right_hand_compliance) && (i>=11) && (i<=17)){
+		hubo.setJointCompliance(i, true);
+	  }
+          else{
+	    	  hubo.setJointCompliance(i, false);//not arms or compliance flags are all false
+	  }	 
     }
     hubo.sendControls();
     if (compliance_flag==true){
 	printf("compliance is on \n");
     }
-    if (compliance_flag==true){
-	printf("compliance is on \n");
+    else {
+	printf("compliance is off \n");
+    }
+
+    if (left_hand_compliance==true){
+	printf("left compliance is on \n");
+    }
+    else {
+	printf("left compliance is off \n");
+    }
+
+    if (right_hand_compliance==true){
+	printf("right compliance is on \n");
+    }
+    else {
+	printf("right compliance is off \n");
     }
 
 
-   printf("out of the loop \n");
 }
 
 
