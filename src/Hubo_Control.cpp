@@ -521,6 +521,50 @@ ctrl_flag_t Hubo_Control::setJointTrajCorrectness(int joint, double correctness)
     return SUCCESS;
 }
 
+ctrl_flag_t Hubo_Control::setJointTrajFrequency(int joint, double frequency)
+{
+    if( joint < HUBO_JOINT_COUNT )
+    {
+        switch( ctrlMap[joint] )
+        {
+            case CtrlRA:
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlLA:
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlRL:
+                H_Leg_Ctrl[RIGHT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlLL:
+                H_Leg_Ctrl[LEFT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlRF:
+                H_Fin_Ctrl[RIGHT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlLF:
+                H_Fin_Ctrl[LEFT].joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlBD:
+                H_Bod_Ctrl.joint[localMap[joint]].frequency = frequency;
+                break;
+            case CtrlNK:
+                H_Nck_Ctrl.joint[localMap[joint]].frequency = frequency;
+                break;
+        }
+    }
+    else
+        return JOINT_OOB;
+
+    return SUCCESS;
+}
+
+void Hubo_Control::setAllTrajFrequency(double frequency)
+{
+    for(int i=0; i<HUBO_JOINT_COUNT; i++)
+        setJointTrajFrequency(i, frequency);
+}
+
 ctrl_flag_t Hubo_Control::setArmTraj(int side, ArmVector angles, ArmVector vels, bool send)
 {
     if( side==LEFT || side==RIGHT )
@@ -706,6 +750,27 @@ ctrl_flag_t Hubo_Control::setJointCompliance(int joint, bool on, double Kp, doub
     return SUCCESS;
 }
 
+ctrl_flag_t Hubo_Control::setJointMaxPWM(int joint, double maxPWM)
+{
+    if( joint < HUBO_JOINT_COUNT )
+    {
+        switch( ctrlMap[joint] )
+        {
+            case CtrlRA:
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].maxPWM = maxPWM;
+                break;
+            case CtrlLA:
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].maxPWM = maxPWM;
+                break;
+            default:
+                return JOINT_OOB;
+        }
+    }
+    else return JOINT_OOB;
+
+    return SUCCESS;
+}
+
 ctrl_flag_t Hubo_Control::setArmCompliance(int side, bool on)
 {
     if( side==LEFT || side==RIGHT )
@@ -727,7 +792,6 @@ ctrl_flag_t Hubo_Control::setArmCompliance(int side, bool on, ArmVector Kp, ArmV
 
     return SUCCESS;
 }
-
 
 ctrl_flag_t Hubo_Control::setJointTorque(int joint, double torque)
 {
@@ -754,11 +818,48 @@ ctrl_flag_t Hubo_Control::setJointTorque(int joint, double torque)
     return SUCCESS;
 }
 
+ctrl_flag_t Hubo_Control::releaseJointTorque(int joint)
+{
+    if( joint < HUBO_JOINT_COUNT )
+    {
+        switch( ctrlMap[joint] )
+        {
+            case CtrlRA:
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].torque = 0;
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].torque_mode = CTRL_TORQUE_OFF;
+                break;
+            case CtrlLA:
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].torque = 0;
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].torque_mode = CTRL_TORQUE_OFF;
+                break;
+            default:
+                return JOINT_OOB;
+            // NOTE: Torque mode is not currently supported on any other joints
+        }
+    }
+    else
+        return JOINT_OOB;
+
+    return SUCCESS;
+}
+
 ctrl_flag_t Hubo_Control::setArmTorques(int side, ArmVector torques)
 {
     if( side==LEFT || side==RIGHT )
         for(int i=0; i<H_Arm_Ctrl[side].count; i++)
             setJointTorque(armjoints[side][i], torques[i]);
+
+    else
+        return BAD_SIDE;
+
+    return SUCCESS;
+}
+
+ctrl_flag_t Hubo_Control::releaseArmTorques(int side)
+{
+    if( side==LEFT || side==RIGHT )
+        for(int i=0; i<H_Arm_Ctrl[side].count; i++)
+            releaseJointTorque(armjoints[side][i]);
 
     else
         return BAD_SIDE;
@@ -1353,7 +1454,7 @@ hubo_ctrl_mode_t Hubo_Control::getCtrlMode(int joint)
 double Hubo_Control::getJointAngle(int joint)
 {
     if( joint < HUBO_JOINT_COUNT )
-        return H_Ref.ref[joint] - jointAngleCalibration[joint];
+        return H_Ref.ref[joint] - jointAngleCalibration[joint]; // FIXME: Change this to use state
     else
         return 0;
 }
@@ -1417,10 +1518,20 @@ double Hubo_Control::getJointNominalSpeed(int joint)
 double Hubo_Control::getJointVelocity(int joint)
 {
     if( joint < HUBO_JOINT_COUNT )
+        return H_State.joint[joint].vel;
+//        return C_State.requested_vel[joint];
+    else
+        return 0;
+}
+
+double Hubo_Control::getJointRefVelocity(int joint)
+{
+    if( joint < HUBO_JOINT_COUNT )
         return C_State.requested_vel[joint];
     else
         return 0;
 }
+
 
 // Velocity control
 double Hubo_Control::getJointVelocityCtrl(int joint)
@@ -1562,6 +1673,20 @@ void Hubo_Control::getLeftArmVels(ArmVector &vels)
 { getArmVels(LEFT, vels); }
 void Hubo_Control::getRightArmVels(ArmVector &vels)
 { getArmVels(RIGHT, vels); }
+
+
+ctrl_flag_t Hubo_Control::getArmRefVels(int side, ArmVector &vels)
+{
+    if( side==LEFT || side==RIGHT )
+    {
+        for(int i=0; i<H_Arm_Ctrl[side].count; i++)
+            vels[i] = getJointRefVelocity(armjoints[side][i]);
+    }
+    else
+        return BAD_SIDE;
+
+    return SUCCESS;
+}
 
 
 // Velocity control
@@ -1816,6 +1941,10 @@ void Hubo_Control::getRightLegAngleStates( LegVector &angles )
 void Hubo_Control::getLeftLegAngleStates( LegVector &angles )
 { getLegAngleStates( LEFT, angles ); }
 
+
+double Hubo_Control::getJointDuty(int joint) { return H_State.joint[joint].duty; }
+
+
 // ~~** Sensors
 // ~* Force-torque
 // Mx
@@ -1946,6 +2075,55 @@ ctrl_flag_t Hubo_Control::passJointAngle(int joint, double radians, bool send)
             case CtrlNK: // Right Fingers
                 H_Nck_Ctrl.joint[localMap[joint]].position = radians;
                 H_Nck_Ctrl.joint[localMap[joint]].ctrl_mode = CTRL_PASS;
+                H_Nck_Ctrl.active=1; ctrlOn[CtrlNK] = true; break;
+        }
+
+        if(send)
+            sendControls();
+    }
+    else
+        return JOINT_OOB;
+
+    return SUCCESS;
+}
+
+ctrl_flag_t Hubo_Control::setJointPWM(int joint, double pwm, bool send)
+{
+    if(joint < HUBO_JOINT_COUNT)
+    {
+        switch( ctrlMap[joint] )
+        {
+            case CtrlRA: // Right Arm
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].pwm = pwm;
+                H_Arm_Ctrl[RIGHT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Arm_Ctrl[RIGHT].active=1; ctrlOn[CtrlRA] = true; break;
+            case CtrlLA: // Left Arm
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].pwm = pwm;
+                H_Arm_Ctrl[LEFT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Arm_Ctrl[LEFT].active=1; ctrlOn[CtrlLA] = true; break;
+            case CtrlRL: // Right Leg
+                H_Leg_Ctrl[RIGHT].joint[localMap[joint]].pwm = pwm;
+                H_Leg_Ctrl[RIGHT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Leg_Ctrl[RIGHT].active=1; ctrlOn[CtrlRL] = true; break;
+            case CtrlLL: // Left Leg
+                H_Leg_Ctrl[LEFT].joint[localMap[joint]].pwm = pwm;
+                H_Leg_Ctrl[LEFT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Leg_Ctrl[LEFT].active=1; ctrlOn[CtrlLL] = true; break;
+            case CtrlRF: // Right Fingers
+                H_Fin_Ctrl[RIGHT].joint[localMap[joint]].pwm = pwm;
+                H_Fin_Ctrl[RIGHT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Fin_Ctrl[RIGHT].active=1; ctrlOn[CtrlRF] = true; break;
+            case CtrlLF: // Left Fingers
+                H_Fin_Ctrl[LEFT].joint[localMap[joint]].pwm = pwm;
+                H_Fin_Ctrl[LEFT].joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Fin_Ctrl[LEFT].active=1; ctrlOn[CtrlLF] = true; break;
+            case CtrlBD: // Right Fingers
+                H_Bod_Ctrl.joint[localMap[joint]].pwm = pwm;
+                H_Bod_Ctrl.joint[localMap[joint]].ctrl_mode = CTRL_PWM;
+                H_Bod_Ctrl.active=1; ctrlOn[CtrlBD] = true; break;
+            case CtrlNK: // Right Fingers
+                H_Nck_Ctrl.joint[localMap[joint]].pwm = pwm;
+                H_Nck_Ctrl.joint[localMap[joint]].ctrl_mode = CTRL_PWM;
                 H_Nck_Ctrl.active=1; ctrlOn[CtrlNK] = true; break;
         }
 

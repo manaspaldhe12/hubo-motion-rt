@@ -36,7 +36,6 @@
  */
 
 
-#include "Walker.h"
 #include "balance-daemon.h"
 #include <hubo-zmp.h>
 #include "Ladderach.h"

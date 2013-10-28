@@ -29,11 +29,7 @@ find_package( urdfdom REQUIRED )
 
 file(GLOB daemonizer_source "src/daemonizer.c" "include/daemonizer.h")
 
-file(GLOB control_daemon_source "src/control-daemon.c"
-                                "include/control-daemon.h"
-                                "tables/control.table"
-                                "tables/duty.table"
-                                "tables/torque.table")
+file(GLOB control_daemon_source "src/control-daemon.c" "include/control-daemon.h" "tables/control.table")
 
 #link_libraries(RobotKin)
 
@@ -46,6 +42,8 @@ file(GLOB balance_daemon_source "src/balance-daemon.cpp"
                                 "include/balance-daemon.h"
                                 "src/Walker.cpp"
                                 "include/Walker.h"
+                                "src/ImpedanceController.cpp"
+                                "include/ImpedanceController.h"
                                 "src/Ladder.cpp"
                                 "include/Ladder.h"
                                 "include/hubo-zmp.h" )

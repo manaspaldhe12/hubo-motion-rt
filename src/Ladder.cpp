@@ -39,7 +39,6 @@
 #include <Hubo_Control.h>
 #include "Ladder.h"
 #include "balance-daemon.h"
-#include "Walker.h"
 
 
 Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelContinuityTolerance) :

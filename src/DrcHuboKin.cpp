@@ -1,5 +1,6 @@
 
 #include "DrcHuboKin.h"
+#include <RobotKin/urdf_parsing.h>
 
 
 using namespace std;
@@ -8,8 +9,17 @@ using namespace RobotKin;
 
 
 DrcHuboKin::DrcHuboKin()
-    : Robot("/etc/hubo-ach/drchubo-v2.urdf", "drchubo")
+    : Robot()
 {
+    linkages_.resize(0);
+
+
+    if( !RobotKinURDF::loadURDF(*this, "/etc/hubo-ach/drchubo_v2.urdf") )
+         RobotKinURDF::loadURDF(*this, "/etc/hubo-ach/drchubo-v2.urdf");
+
+
+
+
     linkage("Body_RSP").name("RightArm");
     linkage("Body_LSP").name("LeftArm");
     linkage("Body_RHY").name("RightLeg");
@@ -21,6 +31,9 @@ DrcHuboKin::DrcHuboKin()
     joint("LEP").name("LEB");
     joint("TSY").name("WST");
 
+    joint("LEB").max(0);
+    joint("REB").max(0);
+
     // Note: These are all basically meaningless
 //    joint("RF11").name("RF1");
 //    joint("RF21").name("RF2");
@@ -29,8 +42,31 @@ DrcHuboKin::DrcHuboKin()
 
     updateFrames();
 
-    linkage("LeftArm").tool().respectToFixed(joint("LWR_dummy").respectToFixed());
-    linkage("RightArm").tool().respectToFixed(joint("RWR_dummy").respectToFixed());
+/*
+    RobotKin::TRANSFORM toolTf[RIGHT] = RobotKin::TRANSFORM::Identity();
+//    toolTf[RIGHT].translate(joint("RWR_dummy").respectToFixed().translation());
+    toolTf[RIGHT] = joint("RWR_dummy").respectToFixed();
+    linkage("RightArm").tool().respectToFixed(toolTf[RIGHT]);
+    toolTf[LEFT] = RobotKin::TRANSFORM::Identity();
+//    toolTf[LEFT].translate(joint("LWR_dummy").respectToFixed().translation());
+    toolTf[LEFT] = joint("LWR_dummy").respectToFixed();
+    linkage("LeftArm").tool().respectToFixed(toolTf[LEFT]);
+*/
+/*
+    toolTfR = RobotKin::TRANSFORM::Identity();
+    toolTfR.translate(joint("RWR_dummy").respectToFixed().translation());
+    toolTfL = RobotKin::TRANSFORM::Identity();
+    toolTfL.translate(joint("LWR_dummy").respectToFixed().translation());
+*/
+    toolTfR = joint("RWR_dummy").respectToFixed();
+    toolTfL = joint("LWR_dummy").respectToFixed();
+    
+    linkage("RightArm").tool().respectToFixed(toolTfR);
+    linkage("LeftArm").tool().respectToFixed(toolTfL);
+
+
+//    linkage("LeftArm").tool().respectToFixed(joint("LWR_dummy").respectToFixed());
+//    linkage("RightArm").tool().respectToFixed(joint("RWR_dummy").respectToFixed()); 
 
 //    TRANSFORM foot = joint("LAR_dummy").respectToFixed();
 //    std::cout << foot.matrix() << std::endl;
@@ -47,21 +83,66 @@ DrcHuboKin::DrcHuboKin()
 //    updateFrames();
 
 
-    armRestValues[RIGHT] << -20*M_PI/180, 0, 0, -30*M_PI/180, 0, 0, 0,
-            0, 0, 0;
-    armRestValues[LEFT]  <<  20*M_PI/180, 0, 0, -30*M_PI/180, 0, 0, 0,
-            0, 0, 0;
+    armRestValues.resize(7);
+    armRestValues <<  0, 0, 0, -30*M_PI/180, 0, 0, 0;
 
-    legRestValues[RIGHT] << 0, 0, -10*M_PI/180, 20*M_PI/180, -10*M_PI/180, 0,
-                            0, 0, 0, 0;
-    legRestValues[LEFT]  << 0, 0, -10*M_PI/180, 20*M_PI/180, -10*M_PI/180, 0,
-            0, 0, 0, 0;
+    
+    armConstraints.performNullSpaceTask = false;
+    armConstraints.maxAttempts = 1;
+    armConstraints.maxIterations = 20;
+    armConstraints.convergenceTolerance = 0.001;
+    armConstraints.wrapToJointLimits = false;
+    armConstraints.wrapSolutionToJointLimits = false;
+    armConstraints.restingValues(armRestValues);
+    armConstraints.performNullSpaceTask = false;
+    
+    
+    jointVals.resize(7); 
 }
 
 DrcHuboKin::DrcHuboKin(string filename)
     : Robot(filename, "drchubo")
 {
+}
 
+void DrcHuboKin::resetTool(int side)
+{
+/*
+    if( side == LEFT )
+        linkage("LeftArm").tool().respectToFixed(toolTf[LEFT]);
+    else
+        linkage("RightArm").tool().respectToFixed(toolTf[RIGHT]);
+*/
+
+    if( side == LEFT )
+        linkage("LeftArm").tool().respectToFixed(toolTfL);
+    else
+        linkage("RightArm").tool().respectToFixed(toolTfR);
+
+/*
+    if( side == LEFT )
+        linkage("LeftArm").tool().respectToFixed(joint("LWR_dummy").respectToFixed());
+    else
+        linkage("RightArm").tool().respectToFixed(joint("RWR_dummy").respectToFixed());
+*/
+}
+
+void DrcHuboKin::setTool(int side, const TRANSFORM offset)
+{
+    if( side == LEFT )
+        linkage("LeftArm").tool().respectToFixed(
+                  toolTfL*offset);
+    else
+        linkage("RightArm").tool().respectToFixed(
+                  toolTfR*offset);
+}
+
+RobotKin::TRANSFORM DrcHuboKin::getTool(int side)
+{
+    if( side == LEFT )
+        return toolTfL.inverse() * linkage("LeftArm").tool().respectToFixed();
+    else
+        return toolTfR.inverse() * linkage("RightArm").tool().respectToFixed();
 }
 
 RobotKin::rk_result_t DrcHuboKin::armTorques(int side, ArmVector &jointTorque, const Vector6d &eeWrench)
@@ -97,21 +178,41 @@ RobotKin::rk_result_t DrcHuboKin::armTorques(int side, ArmVector &jointTorque, c
     return armTorques(side, jointTorque, eeWrench, jointAngles);
 }
 
-void DrcHuboKin::updateHubo(Hubo_Control &hubo)
+void DrcHuboKin::updateHubo(Hubo_Control &hubo, bool state)
 {
-    for(int i=0; i<HUBO_JOINT_COUNT; i++)
-        if( !(strcmp(jointNames[i], "RF1")==0
-                || strcmp(jointNames[i], "RF2")==0
-                || strcmp(jointNames[i], "RF3")==0
-                || strcmp(jointNames[i], "RF4")==0
-                || strcmp(jointNames[i], "RF5")==0
-                || strcmp(jointNames[i], "LF1")==0
-                || strcmp(jointNames[i], "LF2")==0
-                || strcmp(jointNames[i], "LF3")==0
-                || strcmp(jointNames[i], "LF4")==0
-                || strcmp(jointNames[i], "LF5")==0
-                || hubo.H_State.joint[i].active==0) )
-            setJointValue(jointNames[i], hubo.getJointAngleState(i));
+    if(state)
+    {
+        for(int i=0; i<HUBO_JOINT_COUNT; i++)
+            if( !(strcmp(jointNames[i], "RF1")==0
+                    || strcmp(jointNames[i], "RF2")==0
+                    || strcmp(jointNames[i], "RF3")==0
+                    || strcmp(jointNames[i], "RF4")==0
+                    || strcmp(jointNames[i], "RF5")==0
+                    || strcmp(jointNames[i], "LF1")==0
+                    || strcmp(jointNames[i], "LF2")==0
+                    || strcmp(jointNames[i], "LF3")==0
+                    || strcmp(jointNames[i], "LF4")==0
+                    || strcmp(jointNames[i], "LF5")==0
+                    || hubo.H_State.joint[i].active==0) )
+                setJointValue(jointNames[i], hubo.getJointAngleState(i), true);
+    }
+    else
+    {
+        for(int i=0; i<HUBO_JOINT_COUNT; i++)
+            if( !(strcmp(jointNames[i], "RF1")==0
+                    || strcmp(jointNames[i], "RF2")==0
+                    || strcmp(jointNames[i], "RF3")==0
+                    || strcmp(jointNames[i], "RF4")==0
+                    || strcmp(jointNames[i], "RF5")==0
+                    || strcmp(jointNames[i], "LF1")==0
+                    || strcmp(jointNames[i], "LF2")==0
+                    || strcmp(jointNames[i], "LF3")==0
+                    || strcmp(jointNames[i], "LF4")==0
+                    || strcmp(jointNames[i], "LF5")==0
+                    || hubo.H_State.joint[i].active==0) )
+                setJointValue(jointNames[i], hubo.getJointAngle(i), true);
+    }
+    updateFrames();
 }
 
 void DrcHuboKin::updateArmJoints(int side, const ArmVector &jointValues)
@@ -150,29 +251,118 @@ TRANSFORM DrcHuboKin::legFK(int side)
         return linkage("LeftLeg").tool().respectToRobot();
 }
 
-RobotKin::rk_result_t DrcHuboKin::armIK(int side, ArmVector &q, const TRANSFORM target){ return armIK(side, q, target, q); }
 
-RobotKin::rk_result_t DrcHuboKin::armIK(int side, ArmVector &q, const TRANSFORM B, const ArmVector &qPrev)
+ArmJacobian DrcHuboKin::armJacobian(int side)
 {
-    VectorXd jointVals, restVals;
-    jointVals.resize(7); restVals.resize(7);
+    ArmJacobian result; result.setZero();
+    MatrixXd J;
+    if( side == RIGHT )
+        linkage("RightArm").jacobian(J, linkage("RightArm").tool().respectToRobot().translation(), this);
+    else if( side == LEFT )
+        linkage("LeftArm").jacobian(J, linkage("LeftArm").tool().respectToRobot().translation(), this);
+
+    result = J.block<6,7>(0,0);
+    return result;
+}
+
+ArmJacobian DrcHuboKin::armJacobian(int side, ArmVector &q)
+{
+    updateArmJoints(side, q);
+    return armJacobian(side);
+}
+
+
+RobotKin::rk_result_t DrcHuboKin::armIK(int side, ArmVector &q, const TRANSFORM target)
+{
     for(int i=0; i<7; i++)
-    {
-        jointVals(i) = qPrev(i);
-        restVals(i)  = armRestValues[side](i);
-    }
+        jointVals[i] = q[i];
 
     RobotKin::rk_result_t result;
     if(side==LEFT)
-        result = dampedLeastSquaresIK_linkage("LeftArm", jointVals, B);
+        result = dampedLeastSquaresIK_linkage("LeftArm", jointVals, target, armConstraints);
     else
-        result = dampedLeastSquaresIK_linkage("RightArm", jointVals, B);
+        result = dampedLeastSquaresIK_linkage("RightArm", jointVals, target, armConstraints);
 
     for(int i=0; i<7; i++)
-        q(i) = jointVals(i);
+        q[i] = jointVals[i];
 
     for(int i=7; i<ARM_JOINT_COUNT; i++)
-        q(i) = 0;
+        q[i] = 0;
+
+
+    return result;
+}
+
+RobotKin::rk_result_t DrcHuboKin::armIK(int side, ArmVector &q, const TRANSFORM target, const ArmVector &qNull)
+{
+    RobotKin::rk_result_t result;
+
+    result = armIK(side, q, target);
+
+    if((qNull-q).norm() > 1e-10)
+    {
+        double maxAngle = 0;
+        int maxIdx = -1;
+        for(int i=0; i<q.size(); i++)
+        {
+            if(fabs(qNull[i]-q[i]) > fabs(maxAngle))
+            {
+                maxAngle = qNull[i]-q[i];
+                maxIdx = i;
+            }
+        }
+
+        if(maxIdx == -1)
+        {
+            std::cout << "This should not be happening." << std::endl;
+            return result;
+        }
+
+        Eigen::VectorXd dNull(7); dNull.setZero();
+        dNull(maxIdx) = maxAngle;
+
+        ArmJacobian J = armJacobian(side, q);
+        JacobiSVD<ArmJacobian> svdJ;
+
+        svdJ.compute(J, ComputeFullV);
+
+
+        double nullStepSize = 5/180*M_PI/200;
+        double thresh = 1e-6;
+        double max = 0;
+        int col = -1;
+        for(int i=0; i<svdJ.singularValues().size(); i++)
+        {
+            if( svdJ.singularValues()(i) < thresh)
+            {
+                double check = svdJ.matrixV().col(i).transpose().dot(dNull);
+                if( fabs(check) >= fabs(max) )
+                {
+                    max = check;
+                    col = i;
+                }
+            }
+        }
+
+        for(int i=svdJ.singularValues().size(); i<svdJ.matrixV().cols(); i++)
+        {
+            double check = svdJ.matrixV().col(i).transpose().dot(dNull);
+            if( fabs(check) >= fabs(max) )
+            {
+                max = check;
+                col = i;
+            }
+        }
+
+        if( col >= 0 && fabs(max) > 1e-6 )
+        {
+            VectorXd nullStep = max*svdJ.matrixV().col(col).transpose()/fabs(max);
+            clampMaxAbs(nullStep, nullStepSize);
+
+            for(int j=0; j<nullStep.size(); j++)
+                q[j] += nullStep[j];
+        }
+    }
 
     return result;
 }
@@ -441,8 +631,6 @@ RobotKin::rk_result_t DrcHuboKin::legIK(int side, LegVector &q, const Eigen::Iso
     }
     // set the final joint angles to the solution closest to the previous solution
 
-    std::cout << qAll.matrix() << std::endl;
-
     for( int i=0; i<6; i++)
         qA(i) = max( min( qA(i), limits(i,1)), limits(i,0) );
 
@@ -458,6 +646,35 @@ RobotKin::rk_result_t DrcHuboKin::legIK(int side, LegVector &q, const Eigen::Iso
 }
 
 
+
+double sign(double x)
+{
+    return (x < 0) ? -1 : (x > 0);
+}
+
+void DrcConstraints::iterativeJacobianSeed(Robot &robot, size_t attemptNumber,
+                                           const std::vector<size_t> &indices, Eigen::VectorXd &values)
+{
+    if(attemptNumber == 0)
+    {
+        return;
+    }
+    else
+    {
+        if(values(EB) > -5*M_PI/180)
+            values(EB) = -30*M_PI/180;
+
+        if( robot.joint(indices[SR]).name()=="RSR" && fabs(values(SR)+90*M_PI/180) < 3*M_PI/180)
+            values(SR) = (-90+10*sign(values(SR)+90*M_PI/180))*M_PI/180;
+
+        if( robot.joint(indices[SR]).name()=="LSR" && fabs(values(SR)-90*M_PI/180) < 3*M_PI/180)
+            values(SR) = (90+10*sign(values(SR)+90*M_PI/180))*M_PI/180;
+
+        if( fabs(values(WP)) < 3*M_PI/180 )
+            values(WP) = sign(values(WP))*10*M_PI/180;
+
+    }
+}
 
 
 
