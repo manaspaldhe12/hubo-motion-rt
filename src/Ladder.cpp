@@ -36,10 +36,10 @@
  */
 
 
+#include "DrcHuboKin.h"
 #include <Hubo_Control.h>
 #include "Ladder.h"
 #include "balance-daemon.h"
-
 
 Ladder::Ladder(double maxInitTime, double jointSpaceTolerance, double jointVelContinuityTolerance) :
         m_maxInitTime(maxInitTime),
@@ -572,18 +572,49 @@ void Ladder::executeTimeStepCompliance(Hubo_Control &hubo, zmp_traj_element_t &p
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {
-	  printf("%f , \n",currentElem.angles[i]);
-	  hubo.setJointTraj( i, currentElem.angles[i], 0);
-	  if ((compliance_flag || left_hand_compliance) && (i>=4) &&(i<=10)){
-		hubo.setJointCompliance(i, true);
-	  }
-	  else if ((compliance_flag || right_hand_compliance) && (i>=11) && (i<=17)){
-		hubo.setJointCompliance(i, true);
-	  }
-          else{
-	    	  hubo.setJointCompliance(i, false);//not arms or compliance flags are all false
+	 printf("%f , \n",currentElem.angles[i]);
+	 if (compliance_flag ==false && left_hand_compliance==false && right_hand_compliance ==false){
+	        hubo.setJointCompliance(i, false);//not arms or compliance flags are all false
+	   	hubo.setJointTraj( i, currentElem.angles[i], 0);
 	  }	 
-    }
+   	  else{
+		if (compliance_flag || left_hand_compliance){
+                        hubo.setArmAntiFriction(LEFT, true);
+                        hubo.setArmCompliance(LEFT, true); // These will turn on compliance with the default gains of hubo-ach		
+		}
+	  	else if ((compliance_flag || right_hand_compliance) && (i>=11) && (i<=17)){
+	  	        hubo.setArmAntiFriction(RIGHT, true);
+                        hubo.setArmCompliance(RIGHT, true);
+		}
+
+                DrcHuboKin kin;
+                kin.updateHubo(hubo);
+
+                ArmVector torques; // Vector to hold expected torques due to gravity
+                double time, dt=0;
+                time = hubo.getTime();
+                double qlast[HUBO_JOINT_COUNT]; // Array of the previous reference commands for all the joints (needed to calculate velocity)
+                for(int i=0; i<HUBO_JOINT_COUNT; i++){
+                         qlast[i] = hubo.getJointAngle(i);
+                }
+
+                hubo.update();
+                kin.updateHubo(hubo);
+                dt = hubo.getTime() - time;
+                time = hubo.getTime();
+
+                if (compliance_flag || left_hand_compliance){
+                      kin.armTorques(LEFT, torques);
+                      hubo.setArmTorques(LEFT, torques);
+                }
+
+                if (compliance_flag || right_hand_compliance){
+                      kin.armTorques(RIGHT, torques);
+                      hubo.setArmTorques(RIGHT, torques);
+                }
+                hubo.setJointTraj(i, currentElem.angles[i], ((currentElem.angles[i]-qlast[i])/dt));
+	  }
+   }
     hubo.sendControls();
     if (compliance_flag==true){
 	printf("compliance is on \n");
