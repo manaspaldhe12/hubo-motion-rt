@@ -269,10 +269,23 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
  
             nextTimeIndex = timeIndex+1;
             printf(" in this step \n");
-            executeTimeStepCompliance( hubo,currentTrajectory->traj[prevTimeIndex],
-                                   currentTrajectory->traj[timeIndex],
-                                   currentTrajectory->traj[nextTimeIndex],
-                                   gains, dt, traj_params.compliance_flag, traj_params.left_hand_compliance, traj_params.right_hand_compliance );
+	    executeTestStep(hubo, -test_counter);
+            if (increasing==true){
+                test_counter++;
+            }
+            else{
+                test_counter--;
+            }
+            if (test_counter>1000){
+                increasing=false;
+            }
+            if (test_counter<=0){
+                increasing=true;
+            }
+//	   Complianc( hubo,currentTrajectory->traj[prevTimeIndex],
+//                                   currentTrajectory->traj[timeIndex],
+//                                   currentTrajectory->traj[nextTimeIndex],
+//                                   gains, dt, traj_params.compliance_flag, traj_params.left_hand_compliance, traj_params.right_hand_compliance );
             printf("executed a step \n");
 	    fflush(stdout);
         }
