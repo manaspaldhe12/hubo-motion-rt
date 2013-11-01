@@ -82,6 +82,7 @@ typedef Eigen::Vector3d Vector3d;
 #define EB      3
 #define WY      4
 #define WP      5
+#define WR      6
 
 #define HY      0
 #define HR      1
@@ -179,6 +180,14 @@ public:
     */
     void setAllTrajCorrectness(double correctness );
     /**
+     * Sets the expected frequency for a joint's trajectory.
+    */
+    ctrl_flag_t setJointTrajFrequency( int joint, double frequency );
+    /**
+      * Sets the expected frequency for all trajectories.
+     **/
+    void setAllTrajFrequency( double frequency );
+    /**
      * Sets joint-space trajectory values for a joint (position, velocity)
     */
     ctrl_flag_t setJointTraj(int joint, double radians, double vel, bool send=false );
@@ -186,28 +195,28 @@ public:
      * Sets a joint-space trajectory waypoint for all the arms angles on the specified
      * side.
      */
-    ctrl_flag_t setArmTraj(int side, ArmVector angles, ArmVector vels, bool send);
+    ctrl_flag_t setArmTraj(int side, ArmVector angles, ArmVector vels, bool send=false);
     /**
      * Sets a joint-space trajectory waypoint for all angles on the Left Arm.
      */
-    ctrl_flag_t setLeftArmTraj(ArmVector angles, ArmVector vels, bool send);
+    ctrl_flag_t setLeftArmTraj(ArmVector angles, ArmVector vels, bool send=false);
     /**
      * Sets a joint-space trajectory waypoint for all angles on the Right Arm.
      */
-    ctrl_flag_t setRightArmTraj(ArmVector angles, ArmVector vels, bool send);
+    ctrl_flag_t setRightArmTraj(ArmVector angles, ArmVector vels, bool send=false);
     /**
      * Sets a joint-space trajectory waypoint for all the leg angles on the specified
      * side.
      */
-    ctrl_flag_t setLegTraj(int side, ArmVector angles, ArmVector vels, bool send);
+    ctrl_flag_t setLegTraj(int side, ArmVector angles, ArmVector vels, bool send=false);
     /**
      * Sets a joint-space trajectory waypoint for all angles on the Left Leg.
      */
-    ctrl_flag_t setLeftLegTraj(LegVector angles, LegVector vels, bool send);
+    ctrl_flag_t setLeftLegTraj(LegVector angles, LegVector vels, bool send=false);
     /**
      * Sets a joint-space trajectory waypoint for all angles on the Left Leg.
      */
-    ctrl_flag_t setRightLegTraj(LegVector angles, LegVector vels, bool send);
+    ctrl_flag_t setRightLegTraj(LegVector angles, LegVector vels, bool send=false);
     /**
      * Toggles joint-level friction (back-EMF) compensation in the specified
      * joint.
@@ -229,6 +238,10 @@ public:
      */
     ctrl_flag_t setJointCompliance(int joint, bool on, double Kp, double Kd=0);
     /**
+     * Sets the max PWM used by the jointspace compliance mode.
+     */
+    ctrl_flag_t setJointMaxPWM(int joint, double maxPWM);
+    /**
      * Toggles joint-space compliance in the specified arm.
      */
     ctrl_flag_t setArmCompliance(int side, bool on);
@@ -241,6 +254,14 @@ public:
      * Sets the feedforward torque command for the specified joint.
      */
     ctrl_flag_t setJointTorque( int joint, double torque );
+    /**
+     * Turns off torque control for the specified joint
+     */
+    ctrl_flag_t releaseJointTorque( int joint );
+    /**
+     * Turns off torque control for the specified arm
+     */
+    ctrl_flag_t releaseArmTorques( int side );
     /**
      * Sets the feedforward torque commands for the specified arm.
      */
@@ -522,6 +543,10 @@ public:
      * Returns the current velocity of the joint specified by "joint"
     */
     double getJointVelocity( int joint );
+    /**
+     * Returns the current reference velocity of the joint specified by "joint"
+    */
+    double getJointRefVelocity( int joint );
     // Velocity control
     /**
      * Returns the current velocity command value of the joint specified by "joint".
@@ -599,6 +624,11 @@ public:
      * Extension of getArmVels() where side = RIGHT
     */
     void getRightArmVels( ArmVector &vels );
+    /**
+     * Get the velocity of an arm's reference
+    */
+    ctrl_flag_t getArmRefVels( int side, ArmVector &vels );
+
     // Velocity control
     /**
      * Extension of getJointVelocityCtrl() for the arm corresponding to "side" (LEFT or RIGHT).
@@ -719,6 +749,13 @@ public:
      * \b NOTE: Use of this mode is \em strongly discouraged.
     */
     ctrl_flag_t passJointAngle( int joint, double radians, bool send=false );
+    /**
+      * Instructs the control-daemon to send the given PWM command straight through
+      * to the motor board without any kind of conversion or smoothing.
+      *
+      * \b NOTE: Use of this mode is \em strongly discouraged.
+    */
+    ctrl_flag_t setJointPWM( int joint, double pwm , bool send=false );
 
     // ~~~*** State Readings ***~~~ //
 
@@ -762,6 +799,10 @@ public:
      * Similar to getLeftArmAngleStates() but applied to the leg
     */
     void getLeftLegAngleStates( LegVector &angles );
+    /**
+      * Returns the PWM % Duty command that is being sent to the motor for the specified joint
+    */
+    double getJointDuty(int joint);
     // TODO: All of these (state position, velocity, whatever)
 
     // ~~** Sensors

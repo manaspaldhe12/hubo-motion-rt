@@ -258,7 +258,7 @@ void Ladder::commenceClimbing(balance_state_t &parent_state, balance_gains_t &ga
         {
             nextTimeIndex = timeIndex+1;
             printf(" in this step \n");
-            executeTestStep(hubo, test_counter);
+            executeTestStep(hubo, -test_counter);
             if (increasing==true){
                 test_counter++;
             }
