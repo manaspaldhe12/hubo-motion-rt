@@ -80,7 +80,8 @@ typedef enum {
     CTRL_VEL,
     CTRL_HOME,
     CTRL_RESET,
-    CTRL_PASS
+    CTRL_PASS,
+    CTRL_PWM
 } hubo_ctrl_mode_t;
 
 
@@ -149,11 +150,14 @@ typedef struct hubo_joint_control {
     double acceleration;
 
     double torque;
+    double pwm;
 
     double Kp;
     double Kd;
     double maxPWM;
 
+    double maxSpeed;
+    double frequency;
     double correctness;
 // FIXME: Add minimum accel parameter
 
